@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Center Microphone with AI sound waves -->
+    <!-- Mic capsule -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,30 C49.6,30 46,33.6 46,38 L46,52 C46,56.4 49.6,60 54,60 C58.4,60 62,56.4 62,52 L62,38 C62,33.6 58.4,30 54,30 Z" />
+    <!-- Mic cradle & stand -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M68,48 L68,52 C68,59.7 61.7,66 54,66 C46.3,66 40,59.7 40,52 L40,48 L36,48 L36,52 C36,61.2 43,68.8 52,69.9 L52,76 L44,76 L44,80 L64,80 L64,76 L56,76 L56,69.9 C65,68.8 72,61.2 72,52 L72,48 L68,48 Z" />
+    <!-- AI Sparkle top right -->
+    <path
+        android:fillColor="#A5B4FC"
+        android:pathData="M78,28 C78,32 82,34 82,34 C82,34 78,36 78,40 C78,36 74,34 74,34 C74,34 78,32 78,28 Z" />
+    <!-- Small sparkle top left -->
+    <path
+        android:fillColor="#C7D2FE"
+        android:pathData="M34,32 C34,34.5 36.5,36 36.5,36 C36.5,36 34,37.5 34,40 C34,37.5 31.5,36 31.5,36 C31.5,36 34,34.5 34,32 Z" />
+</vector>
