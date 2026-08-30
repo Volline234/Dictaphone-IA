@@ -1,5 +1,6 @@
 package com.example.ui.screens
 
+import android.app.Activity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -47,6 +48,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
@@ -71,6 +73,7 @@ fun PaywallScreen(
 
     var selectedPlan by remember { mutableStateOf("monthly") } // "weekly" or "monthly"
     val scrollState = rememberScrollState()
+    val activity = LocalContext.current as Activity
 
     Column(
         modifier = modifier
@@ -201,10 +204,10 @@ fun PaywallScreen(
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        // Primary Subscription Button (F-30, F-31)
+        // Primary Subscription Button — launches Google Play purchase flow
         Button(
             onClick = {
-                viewModel.billingManager.subscribe(selectedPlan)
+                viewModel.billingManager.launchPurchaseFlow(activity, selectedPlan)
                 onClose()
             },
             colors = ButtonDefaults.buttonColors(
@@ -223,10 +226,24 @@ fun PaywallScreen(
             )
         }
 
-        Spacer(modifier = Modifier.height(10.dp))
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Restore Purchases Button (required by Google Play guidelines)
+        TextButton(
+            onClick = { viewModel.billingManager.restorePurchases() },
+            modifier = Modifier.testTag("restore_purchases_button")
+        ) {
+            Text(
+                text = "Restaurer mes achats",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.primary
+            )
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
 
         Text(
-            text = "Accès Pro Découverte offert. Les abonnements récurrents seront gérés via la facturation sécurisée Google Play lors des prochaines versions.",
+            text = "Paiement sécurisé via Google Play. Essai gratuit de 3 jours, annulable à tout moment depuis les paramètres Google Play.",
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center

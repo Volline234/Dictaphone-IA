@@ -51,3 +51,11 @@
     volatile <fields>;
 }
 -dontwarn kotlinx.coroutines.**
+
+# ------------------------------------------------------------------------------
+# Google Play Billing Client
+# ------------------------------------------------------------------------------
+-keep class com.android.billingclient.api.** { *; }
+-keep interface com.android.billingclient.api.** { *; }
+-keep class com.example.billing.** { *; }
+-dontwarn com.android.billingclient.api.**

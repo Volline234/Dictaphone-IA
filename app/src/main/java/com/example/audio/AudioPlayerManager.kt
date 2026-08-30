@@ -5,6 +5,8 @@ import android.media.MediaPlayer
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -13,11 +15,13 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.io.File
 
-class AudioPlayerManager(private val context: Context) {
+class AudioPlayerManager(context: Context) {
 
     private var mediaPlayer: MediaPlayer? = null
     private var tickerJob: Job? = null
-    private val scope = CoroutineScope(Dispatchers.Main)
+
+    // Managed CoroutineScope — cancelled in release() to prevent memory leaks
+    private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
 
     private val _isPlaying = MutableStateFlow(false)
     val isPlaying: StateFlow<Boolean> = _isPlaying.asStateFlow()
@@ -49,8 +53,18 @@ class AudioPlayerManager(private val context: Context) {
             val player = MediaPlayer().apply {
                 setDataSource(filePath)
                 prepare()
+
                 setOnCompletionListener {
                     stop()
+                }
+
+                // Handle playback errors (corrupted file, unsupported codec, etc.)
+                // Without this, MediaPlayer enters Error state silently and _isPlaying
+                // stays true indefinitely, freezing the UI playback controls.
+                setOnErrorListener { _, what, extra ->
+                    android.util.Log.e("AudioPlayerManager", "MediaPlayer error: what=$what extra=$extra")
+                    stop()
+                    true // true = we handled the error
                 }
             }
             mediaPlayer = player
@@ -83,11 +97,20 @@ class AudioPlayerManager(private val context: Context) {
     }
 
     fun seekTo(progressFraction: Float) {
-        mediaPlayer?.let {
-            val targetMs = (progressFraction * it.duration).toInt()
-            it.seekTo(targetMs)
-            _currentPositionMs.value = targetMs
-            _progress.value = progressFraction
+        try {
+            mediaPlayer?.let {
+                val duration = it.duration
+                if (duration > 0) {
+                    val targetMs = (progressFraction * duration).toInt()
+                    it.seekTo(targetMs)
+                    _currentPositionMs.value = targetMs
+                    _progress.value = progressFraction
+                }
+            }
+        } catch (e: IllegalStateException) {
+            // MediaPlayer is in an invalid state (released, not prepared, or in error)
+            // Silently ignore — the user can retry after playback restarts
+            e.printStackTrace()
         }
     }
 
@@ -113,16 +136,31 @@ class AudioPlayerManager(private val context: Context) {
         }
     }
 
+    /**
+     * Releases all resources held by this manager.
+     * Must be called when the ViewModel is cleared to prevent memory leaks
+     * from the internal CoroutineScope.
+     */
+    fun release() {
+        stop()
+        scope.cancel()
+    }
+
     private fun startTicker() {
         tickerJob?.cancel()
         tickerJob = scope.launch {
             while (isActive && _isPlaying.value) {
                 delay(100)
-                mediaPlayer?.let {
-                    if (it.isPlaying && it.duration > 0) {
-                        _currentPositionMs.value = it.currentPosition
-                        _progress.value = (it.currentPosition.toFloat() / it.duration.toFloat()).coerceIn(0f, 1f)
+                try {
+                    mediaPlayer?.let {
+                        if (it.isPlaying && it.duration > 0) {
+                            _currentPositionMs.value = it.currentPosition
+                            _progress.value = (it.currentPosition.toFloat() / it.duration.toFloat()).coerceIn(0f, 1f)
+                        }
                     }
+                } catch (e: IllegalStateException) {
+                    // MediaPlayer was released between the check and the call
+                    break
                 }
             }
         }

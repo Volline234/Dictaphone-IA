@@ -2,6 +2,7 @@ package com.example
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.AnimatedContent
@@ -97,7 +98,7 @@ fun DictaphoneApp(viewModel: MainViewModel = viewModel()) {
                     tonalElevation = 0.dp,
                     modifier = Modifier.testTag("bottom_navigation_bar")
                 ) {
-                    NavigationDestination.values().forEach { destination ->
+                    NavigationDestination.entries.forEach { destination ->
                         val isSelected = currentDestination == destination
                         NavigationBarItem(
                             selected = isSelected,
@@ -128,6 +129,17 @@ fun DictaphoneApp(viewModel: MainViewModel = viewModel()) {
                     .fillMaxSize()
                     .padding(innerPadding)
             ) {
+                // Handle Android back button/gesture:
+                // - If paywall is showing → close it
+                // - If on a non-HOME tab → go back to HOME
+                // - If on HOME → default behavior (exit app)
+                BackHandler(enabled = showPaywall || currentDestination != NavigationDestination.HOME) {
+                    when {
+                        showPaywall -> viewModel.setShowPaywall(false)
+                        else -> currentDestination = NavigationDestination.HOME
+                    }
+                }
+
                 when (currentDestination) {
                     NavigationDestination.HOME -> {
                         HomeScreen(

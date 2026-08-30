@@ -1,8 +1,21 @@
 package com.example.billing
 
+import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.util.Log
+import com.android.billingclient.api.AcknowledgePurchaseParams
+import com.android.billingclient.api.BillingClient
+import com.android.billingclient.api.BillingClientStateListener
+import com.android.billingclient.api.BillingFlowParams
+import com.android.billingclient.api.BillingResult
+import com.android.billingclient.api.PendingPurchasesParams
+import com.android.billingclient.api.ProductDetails
+import com.android.billingclient.api.Purchase
+import com.android.billingclient.api.PurchasesUpdatedListener
+import com.android.billingclient.api.QueryProductDetailsParams
+import com.android.billingclient.api.QueryPurchasesParams
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -16,14 +29,22 @@ enum class SubscriptionStatus {
 
 class BillingManager(private val context: Context) {
 
-    private val prefs = context.getSharedPreferences("dictaphone_billing_prefs", Context.MODE_PRIVATE)
-
     companion object {
+        private const val TAG = "BillingManager"
+        // Product IDs — must match exactly what you create in Google Play Console
+        const val PRODUCT_ID_WEEKLY = "premium_weekly"
+        const val PRODUCT_ID_MONTHLY = "premium_monthly"
         const val FREE_GENERATIONS_LIMIT = 5
         const val TRIAL_DURATION_DAYS = 7
-        // When true, allows all users to generate without fake purchase blockers
-        const val ENABLE_COMMUNITY_FREE_MODE = true
     }
+
+    private val prefs = context.getSharedPreferences("dictaphone_billing_prefs", Context.MODE_PRIVATE)
+
+    // Google Play Billing Client
+    private var billingClient: BillingClient? = null
+    private var productDetailsList: List<ProductDetails> = emptyList()
+
+    // --- Public StateFlows (unchanged API for existing UI) ---
 
     private val _subscriptionStatus = MutableStateFlow(SubscriptionStatus.FREE_TRIAL)
     val subscriptionStatus: StateFlow<SubscriptionStatus> = _subscriptionStatus.asStateFlow()
@@ -34,11 +55,231 @@ class BillingManager(private val context: Context) {
     private val _trialDaysLeft = MutableStateFlow(TRIAL_DURATION_DAYS)
     val trialDaysLeft: StateFlow<Int> = _trialDaysLeft.asStateFlow()
 
-    init {
-        loadStatus()
+    // Listener for purchase results from Google Play
+    private val purchasesUpdatedListener = PurchasesUpdatedListener { billingResult, purchases ->
+        when (billingResult.responseCode) {
+            BillingClient.BillingResponseCode.OK -> {
+                purchases?.forEach { purchase -> handlePurchase(purchase) }
+            }
+            BillingClient.BillingResponseCode.USER_CANCELED -> {
+                Log.d(TAG, "User cancelled the purchase flow")
+            }
+            else -> {
+                Log.e(TAG, "Purchase error: ${billingResult.debugMessage}")
+            }
+        }
     }
 
-    private fun loadStatus() {
+    init {
+        loadLocalStatus()
+        connectToGooglePlay()
+    }
+
+    // =========================================================================
+    // Google Play Billing — Connection & Product Query
+    // =========================================================================
+
+    private fun connectToGooglePlay() {
+        billingClient = BillingClient.newBuilder(context)
+            .setListener(purchasesUpdatedListener)
+            .enablePendingPurchases(
+                PendingPurchasesParams.newBuilder()
+                    .enableOneTimeProducts()
+                    .build()
+            )
+            .build()
+
+        billingClient?.startConnection(object : BillingClientStateListener {
+            override fun onBillingSetupFinished(billingResult: BillingResult) {
+                if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
+                    Log.d(TAG, "Google Play Billing connected successfully")
+                    queryAvailableProducts()
+                    restorePurchases()
+                } else {
+                    Log.e(TAG, "Billing setup failed: ${billingResult.debugMessage}")
+                }
+            }
+
+            override fun onBillingServiceDisconnected() {
+                Log.w(TAG, "Billing service disconnected — will retry on next user action")
+                // Google recommends NOT reconnecting immediately;
+                // reconnect when a billing action is requested.
+            }
+        })
+    }
+
+    private fun ensureConnected(onReady: () -> Unit) {
+        val client = billingClient
+        if (client != null && client.isReady) {
+            onReady()
+        } else {
+            // Reconnect and execute action when ready
+            billingClient?.startConnection(object : BillingClientStateListener {
+                override fun onBillingSetupFinished(billingResult: BillingResult) {
+                    if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
+                        onReady()
+                    }
+                }
+                override fun onBillingServiceDisconnected() {}
+            })
+        }
+    }
+
+    private fun queryAvailableProducts() {
+        val productList = listOf(
+            QueryProductDetailsParams.Product.newBuilder()
+                .setProductId(PRODUCT_ID_WEEKLY)
+                .setProductType(BillingClient.ProductType.SUBS)
+                .build(),
+            QueryProductDetailsParams.Product.newBuilder()
+                .setProductId(PRODUCT_ID_MONTHLY)
+                .setProductType(BillingClient.ProductType.SUBS)
+                .build()
+        )
+
+        val params = QueryProductDetailsParams.newBuilder()
+            .setProductList(productList)
+            .build()
+
+        billingClient?.queryProductDetailsAsync(params) { billingResult, detailsList ->
+            if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
+                productDetailsList = detailsList
+                Log.d(TAG, "Loaded ${detailsList.size} subscription product(s)")
+            } else {
+                Log.e(TAG, "Failed to query products: ${billingResult.debugMessage}")
+            }
+        }
+    }
+
+    // =========================================================================
+    // Google Play Billing — Purchase Flow
+    // =========================================================================
+
+    /**
+     * Launches the Google Play subscription purchase dialog.
+     * Requires an Activity context to display the purchase sheet.
+     *
+     * @param activity The current Activity (needed by Google Play)
+     * @param plan "weekly" or "monthly"
+     * @return true if the billing flow was launched successfully
+     */
+    fun launchPurchaseFlow(activity: Activity, plan: String): Boolean {
+        val productId = if (plan == "weekly") PRODUCT_ID_WEEKLY else PRODUCT_ID_MONTHLY
+        val productDetails = productDetailsList.find { it.productId == productId }
+
+        if (productDetails == null) {
+            Log.w(TAG, "Product '$productId' not found. Products available: ${productDetailsList.map { it.productId }}")
+            Log.w(TAG, "Falling back to local subscription for development/testing.")
+            subscribeLocal(plan)
+            return false
+        }
+
+        // Get the first subscription offer (includes free trial if configured in Play Console)
+        val offerToken = productDetails.subscriptionOfferDetails?.firstOrNull()?.offerToken
+        if (offerToken == null) {
+            Log.e(TAG, "No subscription offer found for product '$productId'")
+            return false
+        }
+
+        val productDetailsParams = BillingFlowParams.ProductDetailsParams.newBuilder()
+            .setProductDetails(productDetails)
+            .setOfferToken(offerToken)
+            .build()
+
+        val billingFlowParams = BillingFlowParams.newBuilder()
+            .setProductDetailsParamsList(listOf(productDetailsParams))
+            .build()
+
+        val result = billingClient?.launchBillingFlow(activity, billingFlowParams)
+        return result?.responseCode == BillingClient.BillingResponseCode.OK
+    }
+
+    /**
+     * Processes a completed purchase: acknowledges it with Google Play
+     * and updates the local subscription state.
+     */
+    private fun handlePurchase(purchase: Purchase) {
+        if (purchase.purchaseState != Purchase.PurchaseState.PURCHASED) return
+
+        // Acknowledge the purchase (REQUIRED within 3 days or Google refunds it)
+        if (!purchase.isAcknowledged) {
+            val params = AcknowledgePurchaseParams.newBuilder()
+                .setPurchaseToken(purchase.purchaseToken)
+                .build()
+
+            billingClient?.acknowledgePurchase(params) { billingResult ->
+                if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
+                    Log.d(TAG, "Purchase acknowledged successfully")
+                    applyPurchaseLocally(purchase)
+                } else {
+                    Log.e(TAG, "Failed to acknowledge purchase: ${billingResult.debugMessage}")
+                }
+            }
+        } else {
+            applyPurchaseLocally(purchase)
+        }
+    }
+
+    private fun applyPurchaseLocally(purchase: Purchase) {
+        val isWeekly = purchase.products.contains(PRODUCT_ID_WEEKLY)
+        val plan = if (isWeekly) "weekly" else "monthly"
+
+        // Cache subscription state locally for offline access
+        prefs.edit()
+            .putBoolean("is_subscribed", true)
+            .putString("subscribed_plan", plan)
+            .putString("purchase_token", purchase.purchaseToken)
+            .apply()
+
+        _subscriptionStatus.value = if (isWeekly) {
+            SubscriptionStatus.PREMIUM_WEEKLY
+        } else {
+            SubscriptionStatus.PREMIUM_MONTHLY
+        }
+    }
+
+    // =========================================================================
+    // Google Play Billing — Restore Purchases
+    // =========================================================================
+
+    /**
+     * Queries Google Play for existing active subscriptions.
+     * Called automatically on startup and available for the "Restore Purchases" button.
+     */
+    fun restorePurchases() {
+        ensureConnected {
+            val params = QueryPurchasesParams.newBuilder()
+                .setProductType(BillingClient.ProductType.SUBS)
+                .build()
+
+            billingClient?.queryPurchasesAsync(params) { billingResult, purchasesList ->
+                if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
+                    val activePurchase = purchasesList.firstOrNull {
+                        it.purchaseState == Purchase.PurchaseState.PURCHASED
+                    }
+                    if (activePurchase != null) {
+                        handlePurchase(activePurchase)
+                    } else if (prefs.getBoolean("is_subscribed", false)) {
+                        // Local cache says subscribed but Google Play says no —
+                        // subscription expired or was cancelled
+                        prefs.edit()
+                            .putBoolean("is_subscribed", false)
+                            .remove("subscribed_plan")
+                            .remove("purchase_token")
+                            .apply()
+                        loadLocalStatus()
+                        Log.d(TAG, "Subscription expired — reverted to free tier")
+                    }
+                }
+            }
+        }
+    }
+
+    // =========================================================================
+    // Local Status Management (Free Trial & Generation Quotas)
+    // =========================================================================
+
+    private fun loadLocalStatus() {
         val firstLaunchTime = prefs.getLong("first_launch_time", 0L)
         val now = System.currentTimeMillis()
         val installTime = if (firstLaunchTime == 0L) {
@@ -67,14 +308,12 @@ class BillingManager(private val context: Context) {
     }
 
     fun isPremiumOrTrial(): Boolean {
-        return _subscriptionStatus.value != SubscriptionStatus.FREE_TIER_EXPIRED || _remainingFreeGenerations.value > 0
+        return _subscriptionStatus.value != SubscriptionStatus.FREE_TIER_EXPIRED ||
+                _remainingFreeGenerations.value > 0
     }
 
     fun consumeGeneration(): Boolean {
-        if (ENABLE_COMMUNITY_FREE_MODE) {
-            return true
-        }
-
+        // Premium or trial users have unlimited generations
         if (_subscriptionStatus.value == SubscriptionStatus.PREMIUM_WEEKLY ||
             _subscriptionStatus.value == SubscriptionStatus.PREMIUM_MONTHLY ||
             _subscriptionStatus.value == SubscriptionStatus.FREE_TRIAL
@@ -82,6 +321,7 @@ class BillingManager(private val context: Context) {
             return true
         }
 
+        // Free tier: consume from the limited quota
         if (_remainingFreeGenerations.value > 0) {
             val used = prefs.getInt("free_generations_used", 0) + 1
             prefs.edit().putInt("free_generations_used", used).apply()
@@ -92,20 +332,38 @@ class BillingManager(private val context: Context) {
         return false
     }
 
-    fun subscribe(plan: String) {
+    // =========================================================================
+    // Backward Compatibility — Local-only subscribe (for dev/testing)
+    // Will be replaced by launchPurchaseFlow() when PaywallScreen is updated
+    // =========================================================================
+
+    private fun subscribeLocal(plan: String) {
         prefs.edit()
             .putBoolean("is_subscribed", true)
             .putString("subscribed_plan", plan)
             .apply()
-        _subscriptionStatus.value = if (plan == "weekly") SubscriptionStatus.PREMIUM_WEEKLY else SubscriptionStatus.PREMIUM_MONTHLY
+        _subscriptionStatus.value = if (plan == "weekly") {
+            SubscriptionStatus.PREMIUM_WEEKLY
+        } else {
+            SubscriptionStatus.PREMIUM_MONTHLY
+        }
+    }
+
+    /**
+     * @deprecated Use [launchPurchaseFlow] with an Activity instead.
+     * Kept temporarily for backward compatibility with existing UI.
+     */
+    fun subscribe(plan: String) {
+        subscribeLocal(plan)
     }
 
     fun cancelSubscription() {
         prefs.edit()
             .putBoolean("is_subscribed", false)
             .remove("subscribed_plan")
+            .remove("purchase_token")
             .apply()
-        loadStatus()
+        loadLocalStatus()
     }
 
     fun openGooglePlaySubscriptionSettings() {
@@ -118,5 +376,14 @@ class BillingManager(private val context: Context) {
         } catch (e: Exception) {
             e.printStackTrace()
         }
+    }
+
+    /**
+     * Clean up billing client connection.
+     * Should be called when the app is destroyed.
+     */
+    fun disconnect() {
+        billingClient?.endConnection()
+        billingClient = null
     }
 }

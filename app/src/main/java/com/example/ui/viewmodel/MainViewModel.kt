@@ -386,17 +386,7 @@ L'équipe Projet
 
     fun deleteNote(note: VoiceNote) {
         viewModelScope.launch {
-            // Delete associated physical audio recording file from device storage
-            note.audioFilePath?.let { path ->
-                try {
-                    val file = File(path)
-                    if (file.exists()) {
-                        file.delete()
-                    }
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
-            }
+            // Audio file cleanup is handled automatically by the repository
             repository.deleteNote(note)
             if (_currentActiveNoteId.value == note.id) {
                 createNewNote()
@@ -519,5 +509,12 @@ L'équipe Projet
             })
         }
         return array.toString()
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        // Release resources to prevent memory leaks
+        playerManager.release()
+        billingManager.disconnect()
     }
 }

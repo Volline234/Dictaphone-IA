@@ -129,7 +129,9 @@ object DeliverableGenerator {
     }
 
     private fun callGeminiRest(apiKey: String, prompt: String): String {
-        val url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=$apiKey"
+        // API key is sent via HTTP header instead of URL query parameter
+        // to prevent exposure in network logs, proxies, and request history
+        val url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"
         val jsonBody = JSONObject().apply {
             val contentsArray = JSONArray().apply {
                 val contentObj = JSONObject().apply {
@@ -147,6 +149,7 @@ object DeliverableGenerator {
         val requestBody = jsonBody.toString().toRequestBody(mediaType)
         val request = Request.Builder()
             .url(url)
+            .addHeader("x-goog-api-key", apiKey)
             .post(requestBody)
             .build()
 
