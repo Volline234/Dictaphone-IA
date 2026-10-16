@@ -38,6 +38,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
+import androidx.compose.ui.res.stringResource
+import com.example.R
+import com.example.ui.components.AppLanguageQuickSwitch
+import com.example.ui.components.ThemeQuickToggleButton
+import com.example.ui.viewmodel.MainViewModel
 
 data class OnboardingStep(
     val title: String,
@@ -49,27 +54,28 @@ data class OnboardingStep(
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun OnboardingScreen(
+    viewModel: MainViewModel,
     onFinish: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val steps = listOf(
         OnboardingStep(
-            title = "Capturez vos idées instantanément",
-            description = "Enregistrez vos mémos vocaux en 1 tap depuis l'accueil. L'application retranscrit fidèlement vos paroles.",
+            title = stringResource(R.string.onboarding_step1_title),
+            description = stringResource(R.string.onboarding_step1_desc),
             icon = Icons.Default.Mic,
-            highlightBadge = "CAPTURE SPONTANÉE"
+            highlightBadge = stringResource(R.string.onboarding_step1_badge)
         ),
         OnboardingStep(
-            title = "3 Formats pros générés par IA",
-            description = "Transformez vos brouillons oraux en e-mails prêts à envoyer, comptes-rendus avec checklist de tâches, ou posts LinkedIn.",
+            title = stringResource(R.string.onboarding_step2_title),
+            description = stringResource(R.string.onboarding_step2_desc),
             icon = Icons.Default.AutoAwesome,
-            highlightBadge = "INTELLIGENCE ARTIFICIELLE"
+            highlightBadge = stringResource(R.string.onboarding_step2_badge)
         ),
         OnboardingStep(
-            title = "Exportez et partagez en 1 clic",
-            description = "Copiez le texte ou partagez directement vers vos outils de travail (Gmail, Slack, WhatsApp, Notes).",
+            title = stringResource(R.string.onboarding_step3_title),
+            description = stringResource(R.string.onboarding_step3_desc),
             icon = Icons.Default.Share,
-            highlightBadge = "FLUX DE TRAVAIL"
+            highlightBadge = stringResource(R.string.onboarding_step3_badge)
         )
     )
 
@@ -83,16 +89,21 @@ fun OnboardingScreen(
             .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Skip Button
+        // Language + day/night controls (left) and Skip button (right)
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.End
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                AppLanguageQuickSwitch(viewModel = viewModel)
+                ThemeQuickToggleButton(viewModel = viewModel)
+            }
             TextButton(
                 onClick = onFinish,
                 modifier = Modifier.testTag("skip_onboarding_button")
             ) {
-                Text("Passer", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(stringResource(R.string.onboarding_skip), color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
 
@@ -200,7 +211,7 @@ fun OnboardingScreen(
                 .testTag("onboarding_action_button")
         ) {
             Text(
-                text = if (pagerState.currentPage == steps.size - 1) "Commencer" else "Suivant",
+                text = stringResource(if (pagerState.currentPage == steps.size - 1) R.string.onboarding_start else R.string.common_next),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
             )

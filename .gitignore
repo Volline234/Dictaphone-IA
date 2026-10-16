@@ -16,3 +16,10 @@
 local.properties
 .env
 debug.keystore
+
+# IDE & Editor caches
+.idea/
+.vscode/
+.aistudio/
+.antigravity/
+*.log

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="history_search_placeholder">Search notes and deliverables...</string>
+    <string name="history_clear_search">Clear</string>
+    <string name="history_filter_all">All (%1$d)</string>
+    <string name="history_filter_favorites">Favorites</string>
+    <string name="history_empty_title">No voice notes found</string>
+    <string name="history_empty_subtitle">Record your first ideas from the home screen.</string>
+    <string name="history_share_chooser">Share note</string>
+    <string name="history_clip_label">Note</string>
+    <string name="history_copied_toast">Copied to clipboard</string>
+    <string name="history_favorite_cd">Favorite</string>
+    <string name="history_play_audio_cd">Audio playback</string>
+    <string name="history_audio_duration">%1$ds audio recording</string>
+    <string name="history_copy_cd">Copy</string>
+    <string name="history_share_cd">Share</string>
+    <string name="history_delete_cd">Delete</string>
+</resources>

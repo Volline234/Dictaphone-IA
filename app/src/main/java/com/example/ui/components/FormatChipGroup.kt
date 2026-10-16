@@ -1,5 +1,7 @@
 package com.example.ui.components
 
+import androidx.compose.ui.res.stringResource
+
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
@@ -50,11 +52,11 @@ fun FormatChipGroup(
             FilterChip(
                 selected = isSelected,
                 onClick = { onTypeSelected(type) },
-                label = { Text(type.title, style = MaterialTheme.typography.labelLarge) },
+                label = { Text(stringResource(type.titleRes), style = MaterialTheme.typography.labelLarge) },
                 leadingIcon = {
                     Icon(
                         imageVector = icon,
-                        contentDescription = type.title,
+                        contentDescription = stringResource(type.titleRes),
                         tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 },

@@ -37,9 +37,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.R
 import com.example.model.CustomTemplate
 import com.example.ui.viewmodel.MainViewModel
 
@@ -68,13 +70,13 @@ fun CustomTemplateScreen(
         ) {
             Column {
                 Text(
-                    text = "Gabarits personnalisés",
+                    text = stringResource(R.string.templates_title),
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
-                    text = "Créez vos propres règles de reformulation IA",
+                    text = stringResource(R.string.templates_subtitle),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -86,7 +88,7 @@ fun CustomTemplateScreen(
             ) {
                 Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
                 Spacer(modifier = Modifier.width(4.dp))
-                Text("Nouveau")
+                Text(stringResource(R.string.templates_new_button))
             }
         }
 
@@ -104,7 +106,7 @@ fun CustomTemplateScreen(
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
-                        text = "Créer un nouveau gabarit",
+                        text = stringResource(R.string.templates_create_title),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
@@ -114,7 +116,7 @@ fun CustomTemplateScreen(
                     OutlinedTextField(
                         value = templateName,
                         onValueChange = { templateName = it },
-                        label = { Text("Nom du gabarit (ex: Pitch Commercial)") },
+                        label = { Text(stringResource(R.string.templates_name_label)) },
                         singleLine = true,
                         modifier = Modifier
                             .fillMaxWidth()
@@ -126,8 +128,8 @@ fun CustomTemplateScreen(
                     OutlinedTextField(
                         value = templateInstruction,
                         onValueChange = { templateInstruction = it },
-                        label = { Text("Consignes pour l'IA (Prompt personnalisé)") },
-                        placeholder = { Text("Ex: Transforme ce mémo en une liste de questions-réponses pour une FAQ.") },
+                        label = { Text(stringResource(R.string.templates_instruction_label)) },
+                        placeholder = { Text(stringResource(R.string.templates_instruction_placeholder)) },
                         minLines = 3,
                         maxLines = 5,
                         modifier = Modifier
@@ -142,7 +144,7 @@ fun CustomTemplateScreen(
                         horizontalArrangement = Arrangement.End
                     ) {
                         TextButton(onClick = { isCreating = false }) {
-                            Text("Annuler")
+                            Text(stringResource(R.string.common_cancel))
                         }
                         Spacer(modifier = Modifier.width(8.dp))
                         Button(
@@ -158,7 +160,7 @@ fun CustomTemplateScreen(
                             enabled = templateName.isNotBlank() && templateInstruction.isNotBlank(),
                             modifier = Modifier.testTag("save_template_button")
                         ) {
-                            Text("Enregistrer & Utiliser")
+                            Text(stringResource(R.string.templates_save_and_use))
                         }
                     }
                 }
@@ -233,7 +235,7 @@ fun CustomTemplateScreen(
                         if (isSelected) {
                             Icon(
                                 Icons.Default.Check,
-                                contentDescription = "Sélectionné",
+                                contentDescription = stringResource(R.string.templates_selected_cd),
                                 tint = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.size(24.dp)
                             )

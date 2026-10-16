@@ -62,7 +62,7 @@ class SpeechRecognitionHelper(private val context: Context) {
         if (!continuousMode) return
 
         if (!SpeechRecognizer.isRecognitionAvailable(context)) {
-            _errorMessage.value = "Reconnaissance vocale non disponible sur cet appareil."
+            _errorMessage.value = com.example.settings.LocaleHelper.localizedContext(context).getString(com.example.R.string.speech_unavailable)
             return
         }
 

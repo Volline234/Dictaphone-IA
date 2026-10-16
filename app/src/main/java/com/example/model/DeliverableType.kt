@@ -1,28 +1,47 @@
 package com.example.model
 
+import androidx.annotation.StringRes
+import com.example.R
+
 enum class DeliverableType(
-    val title: String,
-    val subtitle: String,
+    @StringRes val titleRes: Int,
+    @StringRes val subtitleRes: Int,
     val iconName: String
 ) {
     EMAIL_PRO(
-        title = "E-mail pro",
-        subtitle = "Objet, politesse, corps & signature",
+        titleRes = R.string.deliverable_email_title,
+        subtitleRes = R.string.deliverable_email_subtitle,
         iconName = "email"
     ),
     MEETING_TASKS(
-        title = "Compte-rendu & Tâches",
-        subtitle = "Décisions & checklist d'actions",
+        titleRes = R.string.deliverable_meeting_title,
+        subtitleRes = R.string.deliverable_meeting_subtitle,
         iconName = "task"
     ),
     CONTENT_CREATOR(
-        title = "Créateur de contenu",
-        subtitle = "Post LinkedIn / Script vidéo court",
+        titleRes = R.string.deliverable_content_title,
+        subtitleRes = R.string.deliverable_content_subtitle,
         iconName = "campaign"
     ),
     CUSTOM(
-        title = "Gabarit personnalisé",
-        subtitle = "Prompt libre réutilisable",
+        titleRes = R.string.deliverable_custom_title,
+        subtitleRes = R.string.deliverable_custom_subtitle,
         iconName = "tune"
-    )
+    );
+
+    val title: String
+        get() = when (this) {
+            EMAIL_PRO -> "E-mail Pro"
+            MEETING_TASKS -> "Compte-rendu & Tâches"
+            CONTENT_CREATOR -> "Contenu Créateur"
+            CUSTOM -> "Gabarit Personnalisé"
+        }
+
+    val subtitle: String
+        get() = when (this) {
+            EMAIL_PRO -> "Clair, structuré et prêt à l'envoi"
+            MEETING_TASKS -> "Points clés, décisions & checklist"
+            CONTENT_CREATOR -> "Post LinkedIn ou script vidéo court"
+            CUSTOM -> "Reformulation sur mesure selon vos consignes"
+        }
 }

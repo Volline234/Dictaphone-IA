@@ -1,6 +1,8 @@
 package com.example.ui.screens
 
 import android.app.Activity
+import android.content.Context
+import android.content.ContextWrapper
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -49,12 +51,14 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.R
 import com.example.billing.SubscriptionStatus
 import com.example.ui.theme.PrimaryIndigo
 import com.example.ui.theme.SecondaryTeal
@@ -73,7 +77,8 @@ fun PaywallScreen(
 
     var selectedPlan by remember { mutableStateOf("monthly") } // "weekly" or "monthly"
     val scrollState = rememberScrollState()
-    val activity = LocalContext.current as Activity
+    val context = LocalContext.current
+    val activity = remember(context) { context.findActivity() }
 
     Column(
         modifier = modifier
@@ -94,7 +99,7 @@ fun PaywallScreen(
             ) {
                 Icon(
                     Icons.Default.Close,
-                    contentDescription = "Fermer",
+                    contentDescription = stringResource(R.string.paywall_close_cd),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
@@ -119,7 +124,7 @@ fun PaywallScreen(
         Spacer(modifier = Modifier.height(16.dp))
 
         Text(
-            text = "Débloquez tout le potentiel de Dictaphone IA",
+            text = stringResource(R.string.paywall_title),
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold,
             textAlign = TextAlign.Center,
@@ -147,13 +152,13 @@ fun PaywallScreen(
                 Spacer(modifier = Modifier.width(8.dp))
                 Column {
                     Text(
-                        text = "Essai gratuit de 3 jours sans engagement",
+                        text = stringResource(R.string.paywall_trial_title),
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onTertiaryContainer
                     )
                     Text(
-                        text = "Aucun prélèvement immédiat. Annulable à tout moment.",
+                        text = stringResource(R.string.paywall_trial_subtitle),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.8f)
                     )
@@ -168,11 +173,11 @@ fun PaywallScreen(
             modifier = Modifier.fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            PremiumFeatureRow("Transcriptions audio illimitées jusqu'à 10 minutes")
-            PremiumFeatureRow("Les 3 formats pros : Email, Compte-rendu & Contenu")
-            PremiumFeatureRow("Régénération instantanée multiton (Formel, Décontracté)")
-            PremiumFeatureRow("Gabarits et prompts personnalisés illimités")
-            PremiumFeatureRow("Historique complet & Partage natif Android sans limite")
+            PremiumFeatureRow(stringResource(R.string.paywall_feature_1))
+            PremiumFeatureRow(stringResource(R.string.paywall_feature_2))
+            PremiumFeatureRow(stringResource(R.string.paywall_feature_3))
+            PremiumFeatureRow(stringResource(R.string.paywall_feature_4))
+            PremiumFeatureRow(stringResource(R.string.paywall_feature_5))
         }
 
         Spacer(modifier = Modifier.height(20.dp))
@@ -180,10 +185,10 @@ fun PaywallScreen(
         // Pricing Cards (F-31)
         // Option 1: Monthly (9,99 €/mois - Recommended)
         PlanCard(
-            title = "Abonnement Mensuel",
-            price = "9,99 € / mois",
-            badge = "RECOMMANDÉ • ÉCONOMIE 50%",
-            subtext = "Soit environ 2,30 € par semaine",
+            title = stringResource(R.string.paywall_monthly_title),
+            price = stringResource(R.string.paywall_monthly_price),
+            badge = stringResource(R.string.paywall_monthly_badge),
+            subtext = stringResource(R.string.paywall_monthly_subtext),
             isSelected = selectedPlan == "monthly",
             onClick = { selectedPlan = "monthly" },
             testTag = "plan_monthly_card"
@@ -193,10 +198,10 @@ fun PaywallScreen(
 
         // Option 2: Weekly (4,99 €/semaine)
         PlanCard(
-            title = "Abonnement Hebdomadaire",
-            price = "4,99 € / semaine",
+            title = stringResource(R.string.paywall_weekly_title),
+            price = stringResource(R.string.paywall_weekly_price),
             badge = null,
-            subtext = "Facturé toutes les semaines",
+            subtext = stringResource(R.string.paywall_weekly_subtext),
             isSelected = selectedPlan == "weekly",
             onClick = { selectedPlan = "weekly" },
             testTag = "plan_weekly_card"
@@ -207,7 +212,11 @@ fun PaywallScreen(
         // Primary Subscription Button — launches Google Play purchase flow
         Button(
             onClick = {
-                viewModel.billingManager.launchPurchaseFlow(activity, selectedPlan)
+                if (activity != null) {
+                    viewModel.billingManager.launchPurchaseFlow(activity, selectedPlan)
+                } else {
+                    viewModel.billingManager.subscribe(selectedPlan)
+                }
                 onClose()
             },
             colors = ButtonDefaults.buttonColors(
@@ -220,7 +229,7 @@ fun PaywallScreen(
                 .testTag("subscribe_cta_button")
         ) {
             Text(
-                text = "Activer l'accès Pro Découverte",
+                text = stringResource(R.string.paywall_cta),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
             )
@@ -234,7 +243,7 @@ fun PaywallScreen(
             modifier = Modifier.testTag("restore_purchases_button")
         ) {
             Text(
-                text = "Restaurer mes achats",
+                text = stringResource(R.string.paywall_restore),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.primary
             )
@@ -243,7 +252,7 @@ fun PaywallScreen(
         Spacer(modifier = Modifier.height(8.dp))
 
         Text(
-            text = "Paiement sécurisé via Google Play. Essai gratuit de 3 jours, annulable à tout moment depuis les paramètres Google Play.",
+            text = stringResource(R.string.paywall_legal),
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
@@ -262,7 +271,7 @@ fun PaywallScreen(
         ) {
             Icon(Icons.Default.OpenInNew, contentDescription = null, modifier = Modifier.size(16.dp))
             Spacer(modifier = Modifier.width(6.dp))
-            Text("Gérer / Annuler mon abonnement Google Play")
+            Text(stringResource(R.string.paywall_manage_sub))
         }
     }
 }
@@ -325,7 +334,7 @@ fun PlanCard(
                         text = badge,
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Bold,
-                        color = Color.White,
+                        color = MaterialTheme.colorScheme.onTertiary,
                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                     )
                 }
@@ -359,4 +368,10 @@ fun PlanCard(
             }
         }
     }
+}
+
+internal tailrec fun Context.findActivity(): Activity? = when (this) {
+    is Activity -> this
+    is ContextWrapper -> baseContext.findActivity()
+    else -> null
 }

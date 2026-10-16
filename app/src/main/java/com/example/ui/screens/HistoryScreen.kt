@@ -59,10 +59,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.R
 import com.example.model.DeliverableType
 import com.example.model.VoiceNote
 import com.example.ui.viewmodel.MainViewModel
@@ -95,14 +97,14 @@ fun HistoryScreen(
         OutlinedTextField(
             value = searchQuery,
             onValueChange = { viewModel.setSearchQuery(it) },
-            placeholder = { Text("Rechercher dans les notes et livrables...") },
+            placeholder = { Text(stringResource(R.string.history_search_placeholder)) },
             leadingIcon = {
                 Icon(Icons.Default.Search, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
             },
             trailingIcon = {
                 if (searchQuery.isNotBlank()) {
                     IconButton(onClick = { viewModel.setSearchQuery("") }) {
-                        Icon(Icons.Default.Clear, contentDescription = "Effacer")
+                        Icon(Icons.Default.Clear, contentDescription = stringResource(R.string.history_clear_search))
                     }
                 }
             },
@@ -130,7 +132,7 @@ fun HistoryScreen(
                     viewModel.setFilterType(null)
                     viewModel.setOnlyFavorites(false)
                 },
-                label = { Text("Tous (${notes.size})") },
+                label = { Text(stringResource(R.string.history_filter_all, notes.size)) },
                 colors = FilterChipDefaults.filterChipColors(
                     selectedContainerColor = MaterialTheme.colorScheme.primaryContainer
                 ),
@@ -140,7 +142,7 @@ fun HistoryScreen(
             FilterChip(
                 selected = onlyFavorites,
                 onClick = { viewModel.setOnlyFavorites(!onlyFavorites) },
-                label = { Text("Favoris") },
+                label = { Text(stringResource(R.string.history_filter_favorites)) },
                 leadingIcon = {
                     Icon(
                         Icons.Default.Star,
@@ -183,14 +185,14 @@ fun HistoryScreen(
                     }
                     Spacer(modifier = Modifier.height(12.dp))
                     Text(
-                        text = "Aucune note vocale trouvée",
+                        text = stringResource(R.string.history_empty_title),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = "Enregistrez vos premières idées depuis l'accueil.",
+                        text = stringResource(R.string.history_empty_subtitle),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -224,13 +226,13 @@ fun HistoryScreen(
                                 putExtra(Intent.EXTRA_SUBJECT, note.title)
                                 putExtra(Intent.EXTRA_TEXT, note.generatedContent)
                             }
-                            context.startActivity(Intent.createChooser(shareIntent, "Partager la note"))
+                            context.startActivity(Intent.createChooser(shareIntent, context.getString(R.string.history_share_chooser)))
                         },
                         onCopy = {
                             val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                            val clip = ClipData.newPlainText("Note", note.generatedContent)
+                            val clip = ClipData.newPlainText(context.getString(R.string.history_clip_label), note.generatedContent)
                             clipboard.setPrimaryClip(clip)
-                            Toast.makeText(context, "Copié dans le presse-papier", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, context.getString(R.string.history_copied_toast), Toast.LENGTH_SHORT).show()
                         }
                     )
                 }
@@ -298,7 +300,7 @@ fun HistoryNoteCard(
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            text = type.title,
+                            text = stringResource(type.titleRes),
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary
@@ -319,7 +321,7 @@ fun HistoryNoteCard(
                     ) {
                         Icon(
                             imageVector = if (note.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                            contentDescription = "Favori",
+                            contentDescription = stringResource(R.string.history_favorite_cd),
                             tint = if (note.isFavorite) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.size(18.dp)
                         )
@@ -367,14 +369,14 @@ fun HistoryNoteCard(
                             ) {
                                 Icon(
                                     imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-                                    contentDescription = "Lecture audio",
+                                    contentDescription = stringResource(R.string.history_play_audio_cd),
                                     tint = MaterialTheme.colorScheme.primary,
                                     modifier = Modifier.size(20.dp)
                                 )
                             }
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
-                                text = "${note.durationSeconds}s d'enregistrement audio",
+                                text = stringResource(R.string.history_audio_duration, note.durationSeconds),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -401,13 +403,13 @@ fun HistoryNoteCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(onClick = onCopy, modifier = Modifier.size(36.dp).testTag("copy_note_${note.id}")) {
-                    Icon(Icons.Default.ContentCopy, contentDescription = "Copier", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp))
+                    Icon(Icons.Default.ContentCopy, contentDescription = stringResource(R.string.history_copy_cd), tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp))
                 }
                 IconButton(onClick = onShare, modifier = Modifier.size(36.dp).testTag("share_note_${note.id}")) {
-                    Icon(Icons.Default.Share, contentDescription = "Partager", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
+                    Icon(Icons.Default.Share, contentDescription = stringResource(R.string.history_share_cd), tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
                 }
                 IconButton(onClick = onDelete, modifier = Modifier.size(36.dp).testTag("delete_note_${note.id}")) {
-                    Icon(Icons.Default.DeleteOutline, contentDescription = "Supprimer", tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(18.dp))
+                    Icon(Icons.Default.DeleteOutline, contentDescription = stringResource(R.string.history_delete_cd), tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(18.dp))
                 }
             }
         }

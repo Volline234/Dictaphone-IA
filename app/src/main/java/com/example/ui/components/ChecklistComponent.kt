@@ -32,8 +32,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
+import com.example.R
 import com.example.model.ChecklistItem
 
 @Composable
@@ -62,7 +64,7 @@ fun ChecklistComponent(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "Tâches & Plan d'action (${items.count { it.isDone }}/${items.size})",
+                text = stringResource(R.string.checklistui_header_title, items.count { it.isDone }, items.size),
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurface
             )
@@ -70,8 +72,8 @@ fun ChecklistComponent(
                 onClick = { isAddingTask = !isAddingTask },
                 modifier = Modifier.testTag("add_task_toggle_button")
             ) {
-                Icon(Icons.Default.Add, contentDescription = "Ajouter tâche", modifier = Modifier.padding(end = 4.dp))
-                Text("Ajouter")
+                Icon(Icons.Default.Add, contentDescription = stringResource(R.string.checklistui_cd_add_task), modifier = Modifier.padding(end = 4.dp))
+                Text(stringResource(R.string.checklistui_add_button))
             }
         }
 
@@ -85,7 +87,7 @@ fun ChecklistComponent(
                 OutlinedTextField(
                     value = newTaskText,
                     onValueChange = { newTaskText = it },
-                    placeholder = { Text("Nouvelle action...") },
+                    placeholder = { Text(stringResource(R.string.checklistui_new_task_placeholder)) },
                     modifier = Modifier
                         .weight(1f)
                         .testTag("new_task_input"),
@@ -102,7 +104,7 @@ fun ChecklistComponent(
                     },
                     modifier = Modifier.testTag("confirm_add_task_button")
                 ) {
-                    Text("OK")
+                    Text(stringResource(R.string.checklistui_ok_button))
                 }
             }
         }
@@ -111,7 +113,7 @@ fun ChecklistComponent(
 
         if (items.isEmpty()) {
             Text(
-                text = "Aucune tâche extraite pour le moment.",
+                text = stringResource(R.string.checklistui_empty_tasks),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(vertical = 8.dp)
@@ -218,7 +220,7 @@ fun ChecklistRowItem(
             ) {
                 Icon(
                     Icons.Default.DeleteOutline,
-                    contentDescription = "Supprimer la tâche",
+                    contentDescription = stringResource(R.string.checklistui_cd_delete_task),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                 )
             }

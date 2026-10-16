@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="templates_title">Gabarits personnalisés</string>
+    <string name="templates_subtitle">Créez vos propres règles de reformulation IA</string>
+    <string name="templates_new_button">Nouveau</string>
+    <string name="templates_create_title">Créer un nouveau gabarit</string>
+    <string name="templates_name_label">Nom du gabarit (ex: Pitch Commercial)</string>
+    <string name="templates_instruction_label">Consignes pour l\'IA (Prompt personnalisé)</string>
+    <string name="templates_instruction_placeholder">Ex: Transforme ce mémo en une liste de questions-réponses pour une FAQ.</string>
+    <string name="templates_save_and_use">Enregistrer &amp; Utiliser</string>
+    <string name="templates_selected_cd">Sélectionné</string>
+</resources>

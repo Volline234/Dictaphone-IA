@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="home_badge_trial">Essai gratuit : %1$d j restants</string>
+    <string name="home_badge_premium">Premium Illimité</string>
+    <string name="home_badge_free_remaining">Gratuit : %1$d restants</string>
+    <string name="home_output_format_label">Format de sortie souhaité :</string>
+    <string name="home_status_paused">EN PAUSE</string>
+    <string name="home_status_recording">ENREGISTREMENT EN COURS</string>
+    <string name="home_cd_cancel_recording">Annuler l\'enregistrement</string>
+    <string name="home_cd_stop_and_structure">Arrêter et structurer</string>
+    <string name="home_cd_resume">Reprendre</string>
+    <string name="home_cd_pause">Pause</string>
+    <string name="home_idle_title">Capturez vos idées à la voix</string>
+    <string name="home_idle_subtitle">Appuyez sur le micro pour démarrer la capture</string>
+    <string name="home_cd_start_recording">Démarrer l\'enregistrement</string>
+    <string name="home_demo_button">💡 Tester un mémo exemple</string>
+    <string name="home_demo_transcript">Réunion avec l\'équipe marketing : nous validons le lancement de la campagne le 10 prochain. Marc doit préparer les 3 visuels et Léa s\'occupe de l\'envoi de la newsletter. Prochaine réunion jeudi 14h.</string>
+    <string name="home_stat_saved_notes">Notes enregistrées</string>
+    <string name="home_stat_structured_deliverables">Livrables structurés</string>
+    <string name="home_new_recording_button">Nouvel enregistrement vocal</string>
+</resources>

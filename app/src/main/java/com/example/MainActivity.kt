@@ -17,12 +17,14 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.HelpOutline
+import androidx.compose.material.icons.automirrored.filled.HelpOutline
+import androidx.compose.material.icons.automirrored.outlined.HelpOutline
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.WorkspacePremium
-import androidx.compose.material.icons.outlined.HelpOutline
+import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Mic
 import androidx.compose.material.icons.outlined.Tune
@@ -47,45 +49,87 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.ui.screens.CustomTemplateScreen
 import com.example.ui.screens.FaqHelpScreen
+import com.example.ui.screens.GeminiAudioTranscriptionScreen
 import com.example.ui.screens.HistoryScreen
 import com.example.ui.screens.HomeScreen
 import com.example.ui.screens.OnboardingScreen
 import com.example.ui.screens.PaywallScreen
 import com.example.ui.theme.MyApplicationTheme
 import com.example.ui.viewmodel.MainViewModel
+import android.content.Context
+import androidx.activity.SystemBarStyle
+import androidx.annotation.StringRes
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.res.stringResource
+import com.example.settings.LocaleHelper
+import com.example.ui.components.isAppInDarkTheme
 
 enum class NavigationDestination(
-    val title: String,
+    @StringRes val titleRes: Int,
     val selectedIcon: ImageVector,
     val unselectedIcon: ImageVector
 ) {
-    HOME("Accueil", Icons.Filled.Mic, Icons.Outlined.Mic),
-    HISTORY("Historique", Icons.Filled.History, Icons.Outlined.History),
-    TEMPLATES("Gabarits", Icons.Filled.Tune, Icons.Outlined.Tune),
-    FAQ("FAQ & Aide", Icons.Filled.HelpOutline, Icons.Outlined.HelpOutline)
+    HOME(R.string.nav_home, Icons.Filled.Mic, Icons.Outlined.Mic),
+    GEMINI_AUDIO(R.string.nav_gemini, Icons.Filled.AutoAwesome, Icons.Outlined.AutoAwesome),
+    HISTORY(R.string.nav_history, Icons.Filled.History, Icons.Outlined.History),
+    TEMPLATES(R.string.nav_templates, Icons.Filled.Tune, Icons.Outlined.Tune),
+    FAQ(R.string.nav_settings, Icons.Filled.Settings, Icons.Outlined.Settings)
 }
 
 class MainActivity : ComponentActivity() {
+
+    /** Applies the interface language chosen in the app (French / English / device). */
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(LocaleHelper.wrap(newBase))
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            MyApplicationTheme {
-                DictaphoneApp()
+            val viewModel: MainViewModel = viewModel()
+            val themeMode by viewModel.themeMode.collectAsStateWithLifecycle()
+            val darkTheme = isAppInDarkTheme(themeMode)
+
+            // Keep status/navigation bar icons readable when the user forces light or dark mode
+            DisposableEffect(darkTheme) {
+                enableEdgeToEdge(
+                    statusBarStyle = SystemBarStyle.auto(
+                        android.graphics.Color.TRANSPARENT,
+                        android.graphics.Color.TRANSPARENT
+                    ) { darkTheme },
+                    navigationBarStyle = SystemBarStyle.auto(
+                        LightNavigationScrim,
+                        DarkNavigationScrim
+                    ) { darkTheme }
+                )
+                onDispose {}
+            }
+
+            MyApplicationTheme(darkTheme = darkTheme) {
+                DictaphoneApp(viewModel = viewModel)
             }
         }
     }
 }
+
+private val LightNavigationScrim = android.graphics.Color.argb(0xe6, 0xFF, 0xFF, 0xFF)
+private val DarkNavigationScrim = android.graphics.Color.argb(0x80, 0x1b, 0x1b, 0x1b)
 
 @Composable
 fun DictaphoneApp(viewModel: MainViewModel = viewModel()) {
     val hasCompletedOnboarding by viewModel.hasCompletedOnboarding.collectAsStateWithLifecycle()
     val showPaywall by viewModel.showPaywall.collectAsStateWithLifecycle()
 
-    var currentDestination by remember { mutableStateOf(NavigationDestination.HOME) }
+    // Saveable so the current tab survives the Activity recreation after a language change
+    var currentDestination by rememberSaveable { mutableStateOf(NavigationDestination.HOME) }
 
     if (!hasCompletedOnboarding) {
         OnboardingScreen(
+            viewModel = viewModel,
             onFinish = { viewModel.completeOnboarding() },
             modifier = Modifier.fillMaxSize()
         )
@@ -106,10 +150,10 @@ fun DictaphoneApp(viewModel: MainViewModel = viewModel()) {
                             icon = {
                                 Icon(
                                     imageVector = if (isSelected) destination.selectedIcon else destination.unselectedIcon,
-                                    contentDescription = destination.title
+                                    contentDescription = stringResource(destination.titleRes)
                                 )
                             },
-                            label = { Text(destination.title) },
+                            label = { Text(stringResource(destination.titleRes), maxLines = 1) },
                             colors = NavigationBarItemDefaults.colors(
                                 selectedIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
                                 selectedTextColor = MaterialTheme.colorScheme.onPrimaryContainer,
@@ -147,6 +191,12 @@ fun DictaphoneApp(viewModel: MainViewModel = viewModel()) {
                             onNavigateToHistory = { currentDestination = NavigationDestination.HISTORY },
                             onNavigateToTemplates = { currentDestination = NavigationDestination.TEMPLATES },
                             onNavigateToPaywall = { viewModel.setShowPaywall(true) }
+                        )
+                    }
+
+                    NavigationDestination.GEMINI_AUDIO -> {
+                        GeminiAudioTranscriptionScreen(
+                            onNavigateToHistory = { currentDestination = NavigationDestination.HISTORY }
                         )
                     }
 

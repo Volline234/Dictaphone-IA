@@ -17,6 +17,12 @@ import com.example.model.CustomTemplate
 import com.example.model.DeliverableType
 import com.example.model.ToneType
 import com.example.model.VoiceNote
+import com.example.R
+import com.example.settings.AppLanguage
+import com.example.settings.AppSettings
+import com.example.settings.LocaleHelper
+import com.example.settings.ThemeMode
+import androidx.annotation.StringRes
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -43,6 +49,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _hasCompletedOnboarding = MutableStateFlow(prefs.getBoolean("has_completed_onboarding", false))
     val hasCompletedOnboarding: StateFlow<Boolean> = _hasCompletedOnboarding.asStateFlow()
 
+    // Display preferences: day/night theme and interface language
+    private val _themeMode = MutableStateFlow(AppSettings.getThemeMode(application))
+    val themeMode: StateFlow<ThemeMode> = _themeMode.asStateFlow()
+
+    private val _appLanguage = MutableStateFlow(AppSettings.getLanguage(application))
+    val appLanguage: StateFlow<AppLanguage> = _appLanguage.asStateFlow()
+
     // Active Note creation state
     private val _currentRecordedAudioPath = MutableStateFlow<String?>(null)
     val currentRecordedAudioPath: StateFlow<String?> = _currentRecordedAudioPath.asStateFlow()
@@ -50,7 +63,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _rawTranscript = MutableStateFlow("")
     val rawTranscript: StateFlow<String> = _rawTranscript.asStateFlow()
 
-    private val _selectedLanguage = MutableStateFlow("fr") // "fr" or "en"
+    // Language of AI deliverables / speech recognition ("fr" or "en").
+    // Defaults to the interface language.
+    private val _selectedLanguage = MutableStateFlow(LocaleHelper.effectiveLanguageCode(application))
     val selectedLanguage: StateFlow<String> = _selectedLanguage.asStateFlow()
 
     private val _selectedType = MutableStateFlow(DeliverableType.EMAIL_PRO)
@@ -81,20 +96,38 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _onlyFavorites = MutableStateFlow(false)
     val onlyFavorites: StateFlow<Boolean> = _onlyFavorites.asStateFlow()
 
+    private fun defaultTemplatesFor(langCode: String): List<CustomTemplate> =
+        if (langCode == "en") {
+            listOf(
+                CustomTemplate(
+                    id = "1",
+                    name = "Tech Job Posting",
+                    promptInstruction = "Write an attractive job description including target profile, key responsibilities, and benefits."
+                ),
+                CustomTemplate(
+                    id = "2",
+                    name = "60s Client Pitch",
+                    promptInstruction = "Craft a punchy elevator pitch: Problem, Solution, Value Proposition, Next Step."
+                )
+            )
+        } else {
+            listOf(
+                CustomTemplate(
+                    id = "1",
+                    name = "Post Recrutement Tech",
+                    promptInstruction = "Rédige une offre d'emploi attrayante avec profil recherché, missions clés et avantages."
+                ),
+                CustomTemplate(
+                    id = "2",
+                    name = "Pitch Client 60s",
+                    promptInstruction = "Formule un elevator pitch percutant : Problème, Solution, Valeur ajoutée, Prochaine étape."
+                )
+            )
+        }
+
     // Custom Templates (F-14)
     private val _customTemplates = MutableStateFlow<List<CustomTemplate>>(
-        listOf(
-            CustomTemplate(
-                id = "1",
-                name = "Post Recrutement Tech",
-                promptInstruction = "Rédige une offre d'emploi attrayante avec profil recherché, missions clés et avantages."
-            ),
-            CustomTemplate(
-                id = "2",
-                name = "Pitch Client 60s",
-                promptInstruction = "Formule un elevator pitch percutant : Problème, Solution, Valeur ajoutée, Prochaine étape."
-            )
-        )
+        defaultTemplatesFor(LocaleHelper.effectiveLanguageCode(application))
     )
     val customTemplates: StateFlow<List<CustomTemplate>> = _customTemplates.asStateFlow()
 
@@ -149,8 +182,33 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             val isFirstLaunch = prefs.getBoolean("is_first_launch_seed", true)
             if (isFirstLaunch) {
                 prefs.edit().putBoolean("is_first_launch_seed", false).apply()
-                val exampleTranscript = "On a validé avec l'équipe le lancement de la nouvelle version mobile le 15 du mois prochain. Thomas s'occupe des visuels marketing pour vendredi et Sarah finalise l'API. Il faut envoyer un récapitulatif à tout le comité de direction avant demain 18h."
-                val sampleEmail = """
+                val seedLanguage = LocaleHelper.effectiveLanguageCode(getApplication())
+                val isEnglishSeed = seedLanguage == "en"
+                val exampleTranscript = if (isEnglishSeed) {
+                    "We agreed with the team to launch the new mobile version on the 15th of next month. Thomas is handling the marketing visuals by Friday and Sarah is finalizing the API. We need to send a recap to the whole management committee before 6pm tomorrow."
+                } else {
+                    "On a validé avec l'équipe le lancement de la nouvelle version mobile le 15 du mois prochain. Thomas s'occupe des visuels marketing pour vendredi et Sarah finalise l'API. Il faut envoyer un récapitulatif à tout le comité de direction avant demain 18h."
+                }
+                val sampleEmail = if (isEnglishSeed) {
+                    """
+Subject: Mobile launch schedule approved & action plan
+
+Hello everyone,
+
+Following our kick-off meeting, I am confirming the approved schedule for the rollout of our new mobile version, set for the 15th of next month.
+
+Here are the agreed responsibilities and deadlines:
+• Thomas: Finalize the marketing visuals (deadline: Friday)
+• Sarah: Complete the technical API development
+• Management: Send the summary recap before 6:00pm tomorrow
+
+I remain available for any adjustments before the next checkpoint.
+
+Best regards,
+The Project Team
+                    """.trimIndent()
+                } else {
+                    """
 Objet : Validation du calendrier de lancement mobile & plan d'action
 
 Bonjour à tous,
@@ -166,33 +224,38 @@ Je reste disponible pour tout ajustement d'ici le point d'étape.
 
 Bien cordialement,
 L'équipe Projet
-                """.trimIndent()
+                    """.trimIndent()
+                }
 
+                // (text, isDone, assignee, deadline)
+                val seedTasks = if (isEnglishSeed) {
+                    listOf(
+                        listOf("Finalize the marketing visuals", false, "Thomas", "Friday"),
+                        listOf("Complete the API development", true, "Sarah", "This week"),
+                        listOf("Send the minutes to the committee", false, "Team", "Tomorrow 6pm")
+                    )
+                } else {
+                    listOf(
+                        listOf("Finaliser les visuels marketing", false, "Thomas", "Vendredi"),
+                        listOf("Clôturer les développements API", true, "Sarah", "Cette semaine"),
+                        listOf("Transmettre le compte-rendu au comité", false, "Équipe", "Demain 18h")
+                    )
+                }
                 val checklist = JSONArray().apply {
-                    put(JSONObject().apply {
-                        put("text", "Finaliser les visuels marketing")
-                        put("isDone", false)
-                        put("assignee", "Thomas")
-                        put("deadline", "Vendredi")
-                    })
-                    put(JSONObject().apply {
-                        put("text", "Clôturer les développements API")
-                        put("isDone", true)
-                        put("assignee", "Sarah")
-                        put("deadline", "Cette semaine")
-                    })
-                    put(JSONObject().apply {
-                        put("text", "Transmettre le compte-rendu au comité")
-                        put("isDone", false)
-                        put("assignee", "Équipe")
-                        put("deadline", "Demain 18h")
-                    })
+                    seedTasks.forEach { task ->
+                        put(JSONObject().apply {
+                            put("text", task[0])
+                            put("isDone", task[1])
+                            put("assignee", task[2])
+                            put("deadline", task[3])
+                        })
+                    }
                 }.toString()
 
                 val note = VoiceNote(
-                    title = "Lancement nouvelle version mobile",
+                    title = if (isEnglishSeed) "New mobile version launch" else "Lancement nouvelle version mobile",
                     rawTranscript = exampleTranscript,
-                    language = "fr",
+                    language = seedLanguage,
                     deliverableType = DeliverableType.EMAIL_PRO.name,
                     toneType = ToneType.FORMAL.name,
                     generatedContent = sampleEmail,
@@ -210,8 +273,48 @@ L'équipe Projet
         _hasCompletedOnboarding.value = true
     }
 
+    fun setThemeMode(mode: ThemeMode) {
+        AppSettings.setThemeMode(getApplication(), mode)
+        _themeMode.value = mode
+    }
+
+    /**
+     * Saves the interface language. Returns true if it changed, in which case
+     * the caller must recreate the Activity so the new resources are loaded.
+     */
+    fun setAppLanguage(language: AppLanguage): Boolean {
+        if (language == _appLanguage.value) return false
+        AppSettings.setLanguage(getApplication(), language)
+        _appLanguage.value = language
+        val newLangCode = LocaleHelper.effectiveLanguageCode(getApplication())
+        // Align AI deliverables / speech recognition with the new interface language
+        _selectedLanguage.value = newLangCode
+        // Update built-in templates ("1" and "2") while keeping user-created templates
+        val defaultsById = defaultTemplatesFor(newLangCode).associateBy { it.id }
+        _customTemplates.value = _customTemplates.value.map { tpl -> defaultsById[tpl.id] ?: tpl }
+        _selectedCustomTemplate.value = _selectedCustomTemplate.value?.let { sel -> defaultsById[sel.id] ?: sel }
+        return true
+    }
+
+    /** Reads a string in the interface language chosen in the app. */
+    private fun str(@StringRes id: Int): String =
+        LocaleHelper.localizedContext(getApplication()).getString(id)
+
     fun setLanguage(lang: String) {
+        val prev = _selectedLanguage.value
         _selectedLanguage.value = lang
+        if (prev != lang) {
+            val transcript = _rawTranscript.value.trim()
+            val textToRegenerate = if (transcript.isNotBlank()) transcript else _generatedContent.value.trim()
+            if (textToRegenerate.isNotBlank()) {
+                generateDeliverable(
+                    transcript = textToRegenerate,
+                    type = _selectedType.value,
+                    tone = _selectedTone.value,
+                    consumeQuota = false
+                )
+            }
+        }
     }
 
     fun startRecording() {
@@ -281,9 +384,14 @@ L'équipe Projet
         }
     }
 
-    private fun generateDeliverable(transcript: String, type: DeliverableType, tone: ToneType) {
+    private fun generateDeliverable(
+        transcript: String,
+        type: DeliverableType,
+        tone: ToneType,
+        consumeQuota: Boolean = true
+    ) {
         // Check billing quota / trial
-        if (!billingManager.consumeGeneration()) {
+        if (consumeQuota && !billingManager.consumeGeneration()) {
             _showPaywall.value = true
             return
         }
@@ -311,9 +419,13 @@ L'équipe Projet
     private fun saveOrUpdateCurrentNote() {
         viewModelScope.launch {
             val transcript = _rawTranscript.value.trim()
-            if (transcript.isBlank()) return@launch
+            if (transcript.isBlank() && _generatedContent.value.isBlank()) return@launch
 
-            val title = transcript.lines().firstOrNull()?.take(40) ?: "Note vocale"
+            val title = if (transcript.isNotBlank()) {
+                transcript.lines().firstOrNull()?.take(40) ?: str(R.string.default_note_title)
+            } else {
+                _generatedContent.value.lines().firstOrNull()?.take(40) ?: str(R.string.default_note_title)
+            }
             val checklistStr = serializeChecklist(_checklistItems.value)
             val currentId = _currentActiveNoteId.value
 
@@ -322,7 +434,8 @@ L'équipe Projet
                 if (existing != null) {
                     val updated = existing.copy(
                         title = title,
-                        rawTranscript = transcript,
+                        rawTranscript = if (transcript.isNotBlank()) transcript else existing.rawTranscript,
+                        language = _selectedLanguage.value,
                         deliverableType = _selectedType.value.name,
                         toneType = _selectedTone.value.name,
                         generatedContent = _generatedContent.value,
@@ -429,8 +542,8 @@ L'équipe Projet
             id = UUID.randomUUID().toString(),
             text = text,
             isDone = false,
-            assignee = "Moi",
-            deadline = "À planifier"
+            assignee = str(R.string.checklist_default_assignee),
+            deadline = str(R.string.checklist_default_deadline)
         )
         val current = _checklistItems.value.toMutableList().apply { add(newItem) }
         _checklistItems.value = current
@@ -486,8 +599,8 @@ L'équipe Projet
                         id = obj.optString("id", UUID.randomUUID().toString()),
                         text = obj.optString("text", ""),
                         isDone = obj.optBoolean("isDone", false),
-                        assignee = obj.optString("assignee", null),
-                        deadline = obj.optString("deadline", null)
+                        assignee = if (obj.has("assignee") && !obj.isNull("assignee")) obj.getString("assignee") else null,
+                        deadline = if (obj.has("deadline") && !obj.isNull("deadline")) obj.getString("deadline") else null
                     )
                 )
             }

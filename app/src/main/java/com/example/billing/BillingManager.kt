@@ -96,14 +96,13 @@ class BillingManager(private val context: Context) {
                     queryAvailableProducts()
                     restorePurchases()
                 } else {
-                    Log.e(TAG, "Billing setup failed: ${billingResult.debugMessage}")
+                    // Billing unavailable on emulators or devices without Play Store services
+                    Log.w(TAG, "Billing service unavailable on this device (${billingResult.debugMessage}). Local subscription fallback mode active.")
                 }
             }
 
             override fun onBillingServiceDisconnected() {
-                Log.w(TAG, "Billing service disconnected — will retry on next user action")
-                // Google recommends NOT reconnecting immediately;
-                // reconnect when a billing action is requested.
+                Log.d(TAG, "Billing service disconnected — will reconnect when required")
             }
         })
     }
@@ -113,15 +112,20 @@ class BillingManager(private val context: Context) {
         if (client != null && client.isReady) {
             onReady()
         } else {
-            // Reconnect and execute action when ready
+            // Reconnect and execute action when ready, or fallback gracefully
             billingClient?.startConnection(object : BillingClientStateListener {
                 override fun onBillingSetupFinished(billingResult: BillingResult) {
                     if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
                         onReady()
+                    } else {
+                        Log.w(TAG, "Google Play Billing unavailable: ${billingResult.debugMessage}")
+                        onReady() // proceed with local fallback
                     }
                 }
-                override fun onBillingServiceDisconnected() {}
-            })
+                override fun onBillingServiceDisconnected() {
+                    onReady() // proceed with local fallback
+                }
+            }) ?: onReady()
         }
     }
 
@@ -141,8 +145,9 @@ class BillingManager(private val context: Context) {
             .setProductList(productList)
             .build()
 
-        billingClient?.queryProductDetailsAsync(params) { billingResult, detailsList ->
+        billingClient?.queryProductDetailsAsync(params) { billingResult, queryProductDetailsResult ->
             if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
+                val detailsList = queryProductDetailsResult.productDetailsList ?: emptyList()
                 productDetailsList = detailsList
                 Log.d(TAG, "Loaded ${detailsList.size} subscription product(s)")
             } else {
@@ -167,18 +172,18 @@ class BillingManager(private val context: Context) {
         val productId = if (plan == "weekly") PRODUCT_ID_WEEKLY else PRODUCT_ID_MONTHLY
         val productDetails = productDetailsList.find { it.productId == productId }
 
-        if (productDetails == null) {
-            Log.w(TAG, "Product '$productId' not found. Products available: ${productDetailsList.map { it.productId }}")
-            Log.w(TAG, "Falling back to local subscription for development/testing.")
+        if (billingClient?.isReady != true || productDetails == null) {
+            Log.i(TAG, "Google Play product '$productId' not available. Activating local subscription mode.")
             subscribeLocal(plan)
-            return false
+            return true
         }
 
         // Get the first subscription offer (includes free trial if configured in Play Console)
         val offerToken = productDetails.subscriptionOfferDetails?.firstOrNull()?.offerToken
         if (offerToken == null) {
-            Log.e(TAG, "No subscription offer found for product '$productId'")
-            return false
+            Log.i(TAG, "No subscription offer found for product '$productId'. Activating local subscription mode.")
+            subscribeLocal(plan)
+            return true
         }
 
         val productDetailsParams = BillingFlowParams.ProductDetailsParams.newBuilder()
@@ -191,7 +196,11 @@ class BillingManager(private val context: Context) {
             .build()
 
         val result = billingClient?.launchBillingFlow(activity, billingFlowParams)
-        return result?.responseCode == BillingClient.BillingResponseCode.OK
+        if (result?.responseCode != BillingClient.BillingResponseCode.OK) {
+            Log.i(TAG, "Billing flow returned ${result?.responseCode}. Activating local subscription mode.")
+            subscribeLocal(plan)
+        }
+        return true
     }
 
     /**

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="onboarding_skip">Passer</string>
+    <string name="onboarding_start">Commencer</string>
+    <string name="onboarding_step1_title">Capturez vos idées instantanément</string>
+    <string name="onboarding_step1_desc">Enregistrez vos mémos vocaux en 1 tap depuis l\'accueil. L\'application retranscrit fidèlement vos paroles.</string>
+    <string name="onboarding_step1_badge">CAPTURE SPONTANÉE</string>
+    <string name="onboarding_step2_title">3 Formats pros générés par IA</string>
+    <string name="onboarding_step2_desc">Transformez vos brouillons oraux en e-mails prêts à envoyer, comptes-rendus avec checklist de tâches, ou posts LinkedIn.</string>
+    <string name="onboarding_step2_badge">INTELLIGENCE ARTIFICIELLE</string>
+    <string name="onboarding_step3_title">Exportez et partagez en 1 clic</string>
+    <string name="onboarding_step3_desc">Copiez le texte ou partagez directement vers vos outils de travail (Gmail, Slack, WhatsApp, Notes).</string>
+    <string name="onboarding_step3_badge">FLUX DE TRAVAIL</string>
+</resources>

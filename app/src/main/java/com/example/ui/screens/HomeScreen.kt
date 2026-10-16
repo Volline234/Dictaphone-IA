@@ -75,9 +75,12 @@ import com.example.ui.components.AudioVisualizerWaveform
 import com.example.ui.components.ChecklistComponent
 import com.example.ui.components.DeliverableCard
 import com.example.ui.components.FormatChipGroup
+import com.example.ui.components.ThemeQuickToggleButton
 import com.example.ui.theme.RecordingRed
 import com.example.ui.theme.RecordingRedGlow
 import com.example.ui.viewmodel.MainViewModel
+import androidx.compose.ui.res.stringResource
+import com.example.R
 
 @Composable
 fun HomeScreen(
@@ -180,9 +183,9 @@ fun HomeScreen(
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
                         text = when (subscriptionStatus) {
-                            SubscriptionStatus.FREE_TRIAL -> "Essai gratuit : $trialDaysLeft j restants"
-                            SubscriptionStatus.PREMIUM_WEEKLY, SubscriptionStatus.PREMIUM_MONTHLY -> "Premium Illimité"
-                            SubscriptionStatus.FREE_TIER_EXPIRED -> "Gratuit : $remainingFree restants"
+                            SubscriptionStatus.FREE_TRIAL -> stringResource(R.string.home_badge_trial, trialDaysLeft)
+                            SubscriptionStatus.PREMIUM_WEEKLY, SubscriptionStatus.PREMIUM_MONTHLY -> stringResource(R.string.home_badge_premium)
+                            SubscriptionStatus.FREE_TIER_EXPIRED -> stringResource(R.string.home_badge_free_remaining, remainingFree)
                         },
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.SemiBold,
@@ -195,46 +198,50 @@ fun HomeScreen(
                 }
             }
 
-            // Language Selector FR / EN (F-05)
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier
-                    .background(
-                        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
-                        RoundedCornerShape(20.dp)
-                    )
-                    .padding(horizontal = 4.dp, vertical = 2.dp)
-            ) {
-                Surface(
-                    shape = RoundedCornerShape(16.dp),
-                    color = if (selectedLanguage == "fr") MaterialTheme.colorScheme.primary else Color.Transparent,
-                    modifier = Modifier
-                        .clickable { viewModel.setLanguage("fr") }
-                        .testTag("lang_fr_button")
-                ) {
-                    Text(
-                        text = "FR",
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = if (selectedLanguage == "fr") Color.White else MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
+            // Quick Day/Night Toggle + Language Selector FR / EN (F-05)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                ThemeQuickToggleButton(viewModel = viewModel)
 
-                Surface(
-                    shape = RoundedCornerShape(16.dp),
-                    color = if (selectedLanguage == "en") MaterialTheme.colorScheme.primary else Color.Transparent,
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
-                        .clickable { viewModel.setLanguage("en") }
-                        .testTag("lang_en_button")
+                        .background(
+                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
+                            RoundedCornerShape(20.dp)
+                        )
+                        .padding(horizontal = 4.dp, vertical = 2.dp)
                 ) {
-                    Text(
-                        text = "EN",
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = if (selectedLanguage == "en") Color.White else MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    Surface(
+                        shape = RoundedCornerShape(16.dp),
+                        color = if (selectedLanguage == "fr") MaterialTheme.colorScheme.primary else Color.Transparent,
+                        modifier = Modifier
+                            .clickable { viewModel.setLanguage("fr") }
+                            .testTag("lang_fr_button")
+                    ) {
+                        Text(
+                            text = "FR",
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = if (selectedLanguage == "fr") MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+
+                    Surface(
+                        shape = RoundedCornerShape(16.dp),
+                        color = if (selectedLanguage == "en") MaterialTheme.colorScheme.primary else Color.Transparent,
+                        modifier = Modifier
+                            .clickable { viewModel.setLanguage("en") }
+                            .testTag("lang_en_button")
+                    ) {
+                        Text(
+                            text = "EN",
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = if (selectedLanguage == "en") MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
             }
         }
@@ -243,7 +250,7 @@ fun HomeScreen(
 
         // Main Format Selector Pills (F-10, F-11, F-12, F-14)
         Text(
-            text = "Format de sortie souhaité :",
+            text = stringResource(R.string.home_output_format_label),
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier
@@ -294,7 +301,7 @@ fun HomeScreen(
                         ) {}
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = if (isPaused) "EN PAUSE" else "ENREGISTREMENT EN COURS",
+                            text = stringResource(if (isPaused) R.string.home_status_paused else R.string.home_status_recording),
                             style = MaterialTheme.typography.labelMedium,
                             fontWeight = FontWeight.Bold,
                             color = if (isPaused) MaterialTheme.colorScheme.outline else RecordingRed
@@ -356,7 +363,7 @@ fun HomeScreen(
                         ) {
                             Icon(
                                 Icons.Default.Close,
-                                contentDescription = "Annuler l'enregistrement",
+                                contentDescription = stringResource(R.string.home_cd_cancel_recording),
                                 tint = MaterialTheme.colorScheme.error
                             )
                         }
@@ -375,7 +382,7 @@ fun HomeScreen(
                         ) {
                             Icon(
                                 Icons.Default.Stop,
-                                contentDescription = "Arrêter et structurer",
+                                contentDescription = stringResource(R.string.home_cd_stop_and_structure),
                                 modifier = Modifier.size(36.dp)
                             )
                         }
@@ -391,7 +398,7 @@ fun HomeScreen(
                         ) {
                             Icon(
                                 imageVector = if (isPaused) Icons.Default.PlayArrow else Icons.Default.Pause,
-                                contentDescription = if (isPaused) "Reprendre" else "Pause",
+                                contentDescription = stringResource(if (isPaused) R.string.home_cd_resume else R.string.home_cd_pause),
                                 tint = MaterialTheme.colorScheme.onSurface
                             )
                         }
@@ -399,7 +406,7 @@ fun HomeScreen(
                 } else {
                     // Idle Record State (F-01: 1-Tap Record)
                     Text(
-                        text = "Capturez vos idées à la voix",
+                        text = stringResource(R.string.home_idle_title),
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface,
@@ -407,7 +414,7 @@ fun HomeScreen(
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = "Appuyez sur le micro pour démarrer la capture",
+                        text = stringResource(R.string.home_idle_subtitle),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center
@@ -436,8 +443,8 @@ fun HomeScreen(
                     ) {
                         Icon(
                             Icons.Default.Mic,
-                            contentDescription = "Démarrer l'enregistrement",
-                            tint = Color.White,
+                            contentDescription = stringResource(R.string.home_cd_start_recording),
+                            tint = MaterialTheme.colorScheme.onPrimary,
                             modifier = Modifier.size(44.dp)
                         )
                     }
@@ -445,18 +452,18 @@ fun HomeScreen(
                     Spacer(modifier = Modifier.height(16.dp))
 
                     // Quick Simulation / Demo Buttons for easy exploration
+                    val demoTranscript = stringResource(R.string.home_demo_transcript)
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.Center
                     ) {
                         TextButton(
                             onClick = {
-                                val demoFr = "Réunion avec l'équipe marketing : nous validons le lancement de la campagne le 10 prochain. Marc doit préparer les 3 visuels et Léa s'occupe de l'envoi de la newsletter. Prochaine réunion jeudi 14h."
-                                viewModel.updateRawTranscript(demoFr)
+                                viewModel.updateRawTranscript(demoTranscript)
                             },
                             modifier = Modifier.testTag("demo_memo_button")
                         ) {
-                            Text("💡 Tester un mémo exemple", style = MaterialTheme.typography.labelMedium)
+                            Text(stringResource(R.string.home_demo_button), style = MaterialTheme.typography.labelMedium)
                         }
                     }
                 }
@@ -497,7 +504,7 @@ fun HomeScreen(
                             color = MaterialTheme.colorScheme.onSurface
                         )
                         Text(
-                            text = "Notes enregistrées",
+                            text = stringResource(R.string.home_stat_saved_notes),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -531,7 +538,7 @@ fun HomeScreen(
                             color = MaterialTheme.colorScheme.onSurface
                         )
                         Text(
-                            text = "Livrables structurés",
+                            text = stringResource(R.string.home_stat_structured_deliverables),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -582,7 +589,7 @@ fun HomeScreen(
             ) {
                 Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(modifier = Modifier.width(6.dp))
-                Text("Nouvel enregistrement vocal")
+                Text(stringResource(R.string.home_new_recording_button))
             }
         }
     }

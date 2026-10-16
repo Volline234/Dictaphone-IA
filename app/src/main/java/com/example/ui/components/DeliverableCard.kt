@@ -60,8 +60,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.R
 import com.example.model.DeliverableType
 import com.example.model.ToneType
 
@@ -91,6 +93,9 @@ fun DeliverableCard(
         DeliverableType.CONTENT_CREATOR -> Icons.Default.Campaign
         DeliverableType.CUSTOM -> Icons.Default.Tune
     }
+
+    val deliverableTitle = stringResource(deliverableType.titleRes)
+    val deliverableSubtitle = stringResource(deliverableType.subtitleRes)
 
     Card(
         modifier = modifier
@@ -126,7 +131,7 @@ fun DeliverableCard(
                         Box(contentAlignment = Alignment.Center) {
                             Icon(
                                 imageVector = formatIcon,
-                                contentDescription = deliverableType.title,
+                                contentDescription = deliverableTitle,
                                 tint = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.size(22.dp)
                             )
@@ -135,13 +140,13 @@ fun DeliverableCard(
                     Spacer(modifier = Modifier.width(10.dp))
                     Column {
                         Text(
-                            text = deliverableType.title,
+                            text = deliverableTitle,
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface
                         )
                         Text(
-                            text = deliverableType.subtitle,
+                            text = deliverableSubtitle,
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -155,7 +160,7 @@ fun DeliverableCard(
                     ) {
                         Icon(
                             imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                            contentDescription = if (isFavorite) "Retirer des favoris" else "Ajouter aux favoris",
+                            contentDescription = stringResource(if (isFavorite) R.string.card_cd_remove_favorite else R.string.card_cd_add_favorite),
                             tint = if (isFavorite) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
@@ -163,15 +168,15 @@ fun DeliverableCard(
                     IconButton(
                         onClick = {
                             val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                            val clip = ClipData.newPlainText("Livrable Dictaphone IA", generatedText)
+                            val clip = ClipData.newPlainText(context.getString(R.string.card_clip_label), generatedText)
                             clipboard.setPrimaryClip(clip)
-                            Toast.makeText(context, "Texte copié dans le presse-papier", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, context.getString(R.string.card_toast_copied), Toast.LENGTH_SHORT).show()
                         },
                         modifier = Modifier.testTag("copy_button")
                     ) {
                         Icon(
                             Icons.Default.ContentCopy,
-                            contentDescription = "Copier le texte",
+                            contentDescription = stringResource(R.string.card_cd_copy_text),
                             tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
@@ -180,16 +185,16 @@ fun DeliverableCard(
                         onClick = {
                             val shareIntent = Intent(Intent.ACTION_SEND).apply {
                                 type = "text/plain"
-                                putExtra(Intent.EXTRA_SUBJECT, deliverableType.title)
+                                putExtra(Intent.EXTRA_SUBJECT, context.getString(deliverableType.titleRes))
                                 putExtra(Intent.EXTRA_TEXT, generatedText)
                             }
-                            context.startActivity(Intent.createChooser(shareIntent, "Partager le livrable"))
+                            context.startActivity(Intent.createChooser(shareIntent, context.getString(R.string.card_share_chooser_title)))
                         },
                         modifier = Modifier.testTag("share_button")
                     ) {
                         Icon(
                             Icons.Default.Share,
-                            contentDescription = "Partager le livrable",
+                            contentDescription = stringResource(R.string.card_cd_share_deliverable),
                             tint = MaterialTheme.colorScheme.primary
                         )
                     }
@@ -205,7 +210,7 @@ fun DeliverableCard(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
-                    text = "Tonalité éditoriale :",
+                    text = stringResource(R.string.card_editorial_tone_label),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -235,20 +240,21 @@ fun DeliverableCard(
                         CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                         Spacer(modifier = Modifier.height(12.dp))
                         Text(
-                            text = "Génération du livrable en cours...",
+                            text = stringResource(R.string.card_generating_progress),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
             } else {
+                val emptyGenText = stringResource(R.string.card_empty_generated)
                 Surface(
                     shape = RoundedCornerShape(12.dp),
                     color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text(
-                        text = generatedText.ifBlank { "Aucun texte généré pour le moment." },
+                        text = generatedText.ifBlank { emptyGenText },
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.padding(14.dp)
@@ -279,7 +285,7 @@ fun DeliverableCard(
                             )
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
-                                text = "Transcription brute",
+                                text = stringResource(R.string.card_raw_transcript_title),
                                 style = MaterialTheme.typography.labelMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -291,7 +297,7 @@ fun DeliverableCard(
                         ) {
                             Icon(
                                 imageVector = if (isRawExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                                contentDescription = if (isRawExpanded) "Masquer" else "Afficher",
+                                contentDescription = stringResource(if (isRawExpanded) R.string.card_cd_hide else R.string.card_cd_show),
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
@@ -319,19 +325,20 @@ fun DeliverableCard(
                                         editedRawText = rawTranscript
                                         isEditingRaw = false
                                     }) {
-                                        Text("Annuler")
+                                        Text(stringResource(R.string.common_cancel))
                                     }
                                     Spacer(modifier = Modifier.width(8.dp))
                                     FilledTonalButton(onClick = {
                                         onRawTranscriptEdited(editedRawText)
                                         isEditingRaw = false
                                     }) {
-                                        Text("Appliquer & Régénérer")
+                                        Text(stringResource(R.string.card_apply_and_regenerate))
                                     }
                                 }
                             } else {
+                                val emptyRawText = stringResource(R.string.card_empty_raw_transcript)
                                 Text(
-                                    text = rawTranscript.ifBlank { "(Aucune transcription brute)" },
+                                    text = rawTranscript.ifBlank { emptyRawText },
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
@@ -340,7 +347,7 @@ fun DeliverableCard(
                                     onClick = { isEditingRaw = true },
                                     modifier = Modifier.testTag("edit_raw_button")
                                 ) {
-                                    Text("Modifier la transcription brute")
+                                    Text(stringResource(R.string.card_edit_raw_button))
                                 }
                             }
                         }
@@ -368,17 +375,17 @@ fun DeliverableCard(
                         modifier = Modifier.size(18.dp)
                     )
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text("Régénérer")
+                    Text(stringResource(R.string.card_regenerate_button))
                 }
 
                 Button(
                     onClick = {
                         val shareIntent = Intent(Intent.ACTION_SEND).apply {
                             type = "text/plain"
-                            putExtra(Intent.EXTRA_SUBJECT, deliverableType.title)
+                            putExtra(Intent.EXTRA_SUBJECT, context.getString(deliverableType.titleRes))
                             putExtra(Intent.EXTRA_TEXT, generatedText)
                         }
-                        context.startActivity(Intent.createChooser(shareIntent, "Partager le livrable"))
+                        context.startActivity(Intent.createChooser(shareIntent, context.getString(R.string.card_share_chooser_title)))
                     },
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.primary
@@ -393,7 +400,7 @@ fun DeliverableCard(
                         modifier = Modifier.size(18.dp)
                     )
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text("Partager")
+                    Text(stringResource(R.string.common_share))
                 }
             }
         }

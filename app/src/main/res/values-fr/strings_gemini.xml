@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="gemini_mic_permission_required">Permission microphone requise pour l\'enregistrement</string>
+    <string name="gemini_ai_cd">Gemini AI</string>
+    <string name="gemini_header_title">Transcription Audio Directe</string>
+    <string name="gemini_header_subtitle">Capture microphone + API Gemini REST (gemini-2.5-flash)</string>
+    <string name="gemini_language_label">Langue :</string>
+    <string name="gemini_lang_fr">🇫🇷 Français</string>
+    <string name="gemini_lang_en">🇬🇧 English</string>
+    <string name="gemini_custom_instructions_label">Consignes personnalisées (optionnel)</string>
+    <string name="gemini_custom_instructions_placeholder">Ex: Synthétiser les points techniques, ton soutenu...</string>
+    <string name="gemini_ready_title">Prêt à enregistrer</string>
+    <string name="gemini_ready_subtitle">Appuyez sur le micro pour capturer votre voix et l\'envoyer directement à Gemini.</string>
+    <string name="gemini_start_recording_cd">Démarrer enregistrement</string>
+    <string name="gemini_recording_badge">ENREGISTREMENT MICROPHONE EN COURS</string>
+    <string name="gemini_stop_and_transcribe">Terminer &amp; Transcrire</string>
+    <string name="gemini_transcribing_default">Transcription et structuration par Gemini AI en cours...</string>
+    <string name="gemini_sending_audio">Envoi des données audio (%1$d Ko) à Gemini AI...</string>
+    <string name="gemini_success_title">Transcription terminée avec succès</string>
+    <string name="gemini_new_recording_cd">Nouvel enregistrement</string>
+    <string name="gemini_clip_label">Transcription</string>
+    <string name="gemini_copied_toast">Transcription copiée dans le presse-papiers</string>
+    <string name="gemini_copy_button">Copier</string>
+    <string name="gemini_saved_toast">Note enregistrée dans l\'historique !</string>
+    <string name="gemini_saved_button">Enregistré</string>
+    <string name="gemini_save_button">Sauvegarder</string>
+    <string name="gemini_error_title">⚠️ Erreur de transcription</string>
+    <string name="gemini_retry_button">Réessayer</string>
+    <string name="gemini_tone_language_meta">Ton : %1$s • Langue : %2$s</string>
+    <string name="gemini_summary_header">📌 Résumé Exécutif</string>
+    <string name="gemini_keypoints_header">💡 Points Clés Détectés</string>
+    <string name="gemini_actions_header">✅ Tâches &amp; Actions Identifiées</string>
+    <string name="gemini_raw_header">🎙️ Transcription Mot à Mot</string>
+    <string name="gemini_err_mic_start">Impossible de démarrer l\'enregistrement du microphone.</string>
+    <string name="gemini_err_no_file">Aucun fichier audio enregistré trouvé.</string>
+    <string name="gemini_err_empty_audio">L\'enregistrement audio est vide. Veuillez réessayer en parlant plus fort.</string>
+    <string name="gemini_err_api_key">Clé API Gemini non configurée dans BuildConfig. Veuillez renseigner GEMINI_API_KEY.</string>
+    <string name="gemini_err_generic">Une erreur est survenue lors de la transcription avec Gemini AI.</string>
+    <string name="gemini_err_empty_response">Réponse vide reçue de l\'API Gemini.</string>
+    <string name="gemini_fallback_title">Transcription Note Vocale</string>
+    <string name="gemini_fallback_summary">Transcription générée avec succès.</string>
+</resources>

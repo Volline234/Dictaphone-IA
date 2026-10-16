@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- DeliverableCard -->
+    <string name="card_cd_remove_favorite">Remove from favorites</string>
+    <string name="card_cd_add_favorite">Add to favorites</string>
+    <string name="card_clip_label">Dictaphone IA Deliverable</string>
+    <string name="card_toast_copied">Text copied to clipboard</string>
+    <string name="card_cd_copy_text">Copy text</string>
+    <string name="card_share_chooser_title">Share deliverable</string>
+    <string name="card_cd_share_deliverable">Share deliverable</string>
+    <string name="card_editorial_tone_label">Editorial tone:</string>
+    <string name="card_generating_progress">Generating deliverable...</string>
+    <string name="card_empty_generated">No text generated yet.</string>
+    <string name="card_raw_transcript_title">Raw transcript</string>
+    <string name="card_cd_hide">Hide</string>
+    <string name="card_cd_show">Show</string>
+    <string name="card_apply_and_regenerate">Apply &amp; Regenerate</string>
+    <string name="card_empty_raw_transcript">(No raw transcript)</string>
+    <string name="card_edit_raw_button">Edit raw transcript</string>
+    <string name="card_regenerate_button">Regenerate</string>
+
+    <!-- ChecklistComponent -->
+    <string name="checklistui_header_title">Tasks &amp; Action Plan (%1$d/%2$d)</string>
+    <string name="checklistui_cd_add_task">Add task</string>
+    <string name="checklistui_add_button">Add</string>
+    <string name="checklistui_new_task_placeholder">New action...</string>
+    <string name="checklistui_ok_button">OK</string>
+    <string name="checklistui_empty_tasks">No tasks extracted yet.</string>
+    <string name="checklistui_cd_delete_task">Delete task</string>
+</resources>

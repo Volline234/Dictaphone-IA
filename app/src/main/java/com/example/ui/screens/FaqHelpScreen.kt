@@ -48,6 +48,14 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.ui.viewmodel.MainViewModel
+import androidx.compose.ui.res.stringResource
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.R
+import com.example.ui.components.AppLanguageSelector
+import com.example.ui.components.ThemeModeSelector
+import com.example.ui.components.applyAppLanguage
+import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.Translate
 
 @Composable
 fun FaqHelpScreen(
@@ -57,6 +65,8 @@ fun FaqHelpScreen(
     val context = LocalContext.current
     var showDeleteConfirmDialog by remember { mutableStateOf(false) }
     val scrollState = rememberScrollState()
+    val themeMode by viewModel.themeMode.collectAsStateWithLifecycle()
+    val appLanguage by viewModel.appLanguage.collectAsStateWithLifecycle()
 
     Column(
         modifier = modifier
@@ -83,22 +93,63 @@ fun FaqHelpScreen(
             Spacer(modifier = Modifier.width(12.dp))
             Column {
                 Text(
-                    text = "Guide & FAQ",
+                    text = stringResource(R.string.faq_header_title),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
-                    text = "Conseils d'utilisation et protection des données",
+                    text = stringResource(R.string.faq_header_subtitle),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
 
+        // Section 0: Display preferences (day/night theme + interface language)
+        Card(
+            shape = RoundedCornerShape(20.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.4f)),
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag("display_settings_card")
+        ) {
+            Column(modifier = Modifier.padding(14.dp)) {
+                SettingsSectionHeader(
+                    icon = Icons.Default.Palette,
+                    title = stringResource(R.string.settings_appearance),
+                    description = stringResource(R.string.settings_appearance_desc)
+                )
+                Spacer(modifier = Modifier.height(10.dp))
+                ThemeModeSelector(
+                    selected = themeMode,
+                    onSelected = { viewModel.setThemeMode(it) }
+                )
+
+                HorizontalDivider(
+                    modifier = Modifier.padding(vertical = 16.dp),
+                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+                )
+
+                SettingsSectionHeader(
+                    icon = Icons.Default.Translate,
+                    title = stringResource(R.string.settings_language),
+                    description = stringResource(R.string.settings_language_desc)
+                )
+                Spacer(modifier = Modifier.height(10.dp))
+                AppLanguageSelector(
+                    selected = appLanguage,
+                    onSelected = { applyAppLanguage(viewModel, it, context) }
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(20.dp))
+
         // Section 1: Astuces pour des notes parfaites
         Text(
-            text = "💡 Conseils pour une retranscription optimale",
+            text = stringResource(R.string.faq_tips_title),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface,
@@ -112,9 +163,9 @@ fun FaqHelpScreen(
             modifier = Modifier.fillMaxWidth()
         ) {
             Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                TipItem("1. Parlez naturellement", "Inutile d'articuler exagérément : l'IA sait gommer les hésitations et les tics de langage.")
-                TipItem("2. Choisissez le bon format", "Sélectionnez 'E-mail pro' pour un client, ou 'Compte-rendu' pour extraire des actions avec checklist.")
-                TipItem("3. Modifiez avant d'exporter", "Vous pouvez éditer la transcription brute à tout moment et régénérer le livrable avec un autre ton.")
+                TipItem(stringResource(R.string.faq_tip1_title), stringResource(R.string.faq_tip1_desc))
+                TipItem(stringResource(R.string.faq_tip2_title), stringResource(R.string.faq_tip2_desc))
+                TipItem(stringResource(R.string.faq_tip3_title), stringResource(R.string.faq_tip3_desc))
             }
         }
 
@@ -122,7 +173,7 @@ fun FaqHelpScreen(
 
         // Section 2: Questions Fréquentes (FAQ)
         Text(
-            text = "❓ Foire Aux Questions",
+            text = stringResource(R.string.faq_section_title),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface,
@@ -130,25 +181,30 @@ fun FaqHelpScreen(
         )
 
         FaqAccordionItem(
-            question = "Comment fonctionne la transcription ?",
-            answer = "L'application capture le flux audio de votre micro et utilise des modèles d'IA pour transformer la parole en texte et structurer instantanément les livrables."
+            question = stringResource(R.string.faq_q1),
+            answer = stringResource(R.string.faq_a1)
         )
 
         FaqAccordionItem(
-            question = "Mes enregistrements sont-ils privés et sécurisés ?",
-            answer = "Conformément au RGPD et aux politiques de confidentialité Google Play, vos enregistrements sont stockés localement sur votre appareil et protégés. Vous pouvez les effacer à tout moment."
+            question = stringResource(R.string.faq_q2),
+            answer = stringResource(R.string.faq_a2)
         )
 
         FaqAccordionItem(
-            question = "Comment changer la tonalité d'un document ?",
-            answer = "Sur la fiche du livrable généré, cliquez simplement sur l'un des boutons de tonalité (Formel, Décontracté, Synthétique) : l'IA reformule le texte en quelques secondes sans ré-enregistrement."
+            question = stringResource(R.string.faq_q3),
+            answer = stringResource(R.string.faq_a3)
+        )
+
+        FaqAccordionItem(
+            question = stringResource(R.string.faq_q4),
+            answer = stringResource(R.string.faq_a4)
         )
 
         Spacer(modifier = Modifier.height(24.dp))
 
         // Section 3: Confidentialité & RGPD (T-12, T-14)
         Text(
-            text = "🔒 Données personnelles & RGPD",
+            text = stringResource(R.string.faq_privacy_title),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface,
@@ -166,7 +222,7 @@ fun FaqHelpScreen(
                     Icon(Icons.Default.Security, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "Droit à l'effacement des données",
+                        text = stringResource(R.string.faq_erasure_title),
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
@@ -176,7 +232,7 @@ fun FaqHelpScreen(
                 Spacer(modifier = Modifier.height(6.dp))
 
                 Text(
-                    text = "Vous disposez d'un contrôle total sur vos données audio et textes. Vous pouvez supprimer toutes vos notes et fichiers locaux en un seul clic.",
+                    text = stringResource(R.string.faq_erasure_desc),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -192,7 +248,7 @@ fun FaqHelpScreen(
                 ) {
                     Icon(Icons.Default.DeleteForever, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text("Supprimer toutes mes notes et données")
+                    Text(stringResource(R.string.faq_delete_all_button))
                 }
             }
         }
@@ -201,27 +257,59 @@ fun FaqHelpScreen(
     if (showDeleteConfirmDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirmDialog = false },
-            title = { Text("Confirmer la suppression ?") },
-            text = { Text("Toutes vos notes vocales, transcriptions et fichiers audio associés seront définitivement effacés de votre appareil.") },
+            title = { Text(stringResource(R.string.faq_delete_dialog_title)) },
+            text = { Text(stringResource(R.string.faq_delete_dialog_text)) },
             confirmButton = {
                 Button(
                     onClick = {
                         viewModel.deleteAllUserData()
                         showDeleteConfirmDialog = false
-                        Toast.makeText(context, "Toutes vos données ont été supprimées.", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, context.getString(R.string.faq_delete_done_toast), Toast.LENGTH_SHORT).show()
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
                     modifier = Modifier.testTag("confirm_delete_all_button")
                 ) {
-                    Text("Supprimer définitivement")
+                    Text(stringResource(R.string.faq_delete_dialog_confirm))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteConfirmDialog = false }) {
-                    Text("Annuler")
+                    Text(stringResource(R.string.common_cancel))
                 }
             }
         )
+    }
+}
+
+@Composable
+private fun SettingsSectionHeader(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    title: String,
+    description: String
+) {
+    Row(verticalAlignment = Alignment.Top) {
+        Icon(
+            icon,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier
+                .padding(top = 2.dp)
+                .size(18.dp)
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        Column {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Text(
+                text = description,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
     }
 }
 

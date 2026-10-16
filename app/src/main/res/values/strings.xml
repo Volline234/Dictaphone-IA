@@ -1,3 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Default (fallback) language = ENGLISH.
+    Any device whose language is not French will see these strings.
+    French translations live in values-fr/.
+    Screen-specific strings live in strings_<screen>.xml files.
+-->
 <resources>
     <string name="app_name">Dictaphone IA</string>
+
+    <!-- Bottom navigation -->
+    <string name="nav_home">Home</string>
+    <string name="nav_gemini">Gemini AI</string>
+    <string name="nav_history">History</string>
+    <string name="nav_templates">Templates</string>
+    <string name="nav_settings">Settings</string>
+
+    <!-- Common actions -->
+    <string name="common_copy">Copy</string>
+    <string name="common_copied">Copied to clipboard</string>
+    <string name="common_share">Share</string>
+    <string name="common_share_via">Share via</string>
+    <string name="common_cancel">Cancel</string>
+    <string name="common_delete">Delete</string>
+    <string name="common_save">Save</string>
+    <string name="common_close">Close</string>
+    <string name="common_retry">Retry</string>
+    <string name="common_edit">Edit</string>
+    <string name="common_confirm">Confirm</string>
+    <string name="common_back">Back</string>
+    <string name="common_next">Next</string>
+
+    <!-- Deliverable types -->
+    <string name="deliverable_email_title">Pro email</string>
+    <string name="deliverable_email_subtitle">Subject, greeting, body &amp; signature</string>
+    <string name="deliverable_meeting_title">Minutes &amp; Tasks</string>
+    <string name="deliverable_meeting_subtitle">Decisions &amp; action checklist</string>
+    <string name="deliverable_content_title">Content creator</string>
+    <string name="deliverable_content_subtitle">LinkedIn post / short video script</string>
+    <string name="deliverable_custom_title">Custom template</string>
+    <string name="deliverable_custom_subtitle">Reusable free-form prompt</string>
+
+    <!-- Tones -->
+    <string name="tone_formal">Formal</string>
+    <string name="tone_casual">Casual</string>
+    <string name="tone_synthetic">Concise</string>
+    <string name="tone_dynamic">Dynamic / Inspiring</string>
+
+    <!-- Settings: appearance & language -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_appearance">Appearance</string>
+    <string name="settings_appearance_desc">Dark mode reduces eye strain in low light.</string>
+    <string name="theme_system">System</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_dark">Dark</string>
+    <string name="theme_toggle_to_dark">Switch to dark mode</string>
+    <string name="theme_toggle_to_light">Switch to light mode</string>
+    <string name="settings_language">App language</string>
+    <string name="settings_language_desc">Language of menus and buttons. The language of AI deliverables can be chosen separately with the FR / EN switch on the Home screen.</string>
+    <string name="language_system">Device language</string>
+    <!-- Language names are always shown in their own language -->
+    <string name="language_french" translatable="false">Français</string>
+    <string name="language_english" translatable="false">English</string>
+
+    <!-- Defaults generated in code -->
+    <string name="default_note_title">Voice note</string>
+    <string name="checklist_default_assignee">Me</string>
+    <string name="checklist_default_deadline">To schedule</string>
+    <string name="speech_unavailable">Speech recognition is not available on this device.</string>
 </resources>

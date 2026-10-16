@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="faq_header_title">Settings, Guide &amp; FAQ</string>
+    <string name="faq_header_subtitle">Display preferences, usage tips and data protection</string>
+
+    <string name="faq_tips_title">💡 Tips for the best transcription</string>
+    <string name="faq_tip1_title">1. Speak naturally</string>
+    <string name="faq_tip1_desc">No need to over-articulate: the AI removes hesitations and verbal tics.</string>
+    <string name="faq_tip2_title">2. Pick the right format</string>
+    <string name="faq_tip2_desc">Choose \'Pro email\' for a client, or \'Minutes\' to extract actions into a checklist.</string>
+    <string name="faq_tip3_title">3. Edit before exporting</string>
+    <string name="faq_tip3_desc">You can edit the raw transcript at any time and regenerate the deliverable with another tone.</string>
+
+    <string name="faq_section_title">❓ Frequently Asked Questions</string>
+    <string name="faq_q1">How does transcription work?</string>
+    <string name="faq_a1">The app captures the audio stream from your microphone and uses AI models to turn speech into text and instantly structure your deliverables.</string>
+    <string name="faq_q2">Are my recordings private and secure?</string>
+    <string name="faq_a2">In line with the GDPR and Google Play privacy policies, your recordings are stored locally on your device and protected. You can erase them at any time.</string>
+    <string name="faq_q3">How do I change the tone of a document?</string>
+    <string name="faq_a3">On the generated deliverable card, just tap one of the tone buttons (Formal, Casual, Concise): the AI rewrites the text in seconds without re-recording.</string>
+    <string name="faq_q4">How do I change the language or switch to dark mode?</string>
+    <string name="faq_a4">At the top of this screen, choose Light, Dark or System for the display, and Français, English or the device language for menus. The sun / moon button on the Home screen switches day / night in one tap. The language of AI deliverables is set with the FR / EN switch on the Home screen.</string>
+
+    <string name="faq_privacy_title">🔒 Personal data &amp; GDPR</string>
+    <string name="faq_erasure_title">Right to erasure</string>
+    <string name="faq_erasure_desc">You have full control over your audio and text data. You can delete all your notes and local files in a single tap.</string>
+    <string name="faq_delete_all_button">Delete all my notes and data</string>
+    <string name="faq_delete_dialog_title">Confirm deletion?</string>
+    <string name="faq_delete_dialog_text">All your voice notes, transcripts and related audio files will be permanently erased from your device.</string>
+    <string name="faq_delete_dialog_confirm">Delete permanently</string>
+    <string name="faq_delete_done_toast">All your data has been deleted.</string>
+</resources>

@@ -34,20 +34,21 @@ object DeliverableGenerator {
             ""
         }
 
+        val isEnglish = language.startsWith("en", ignoreCase = true)
         var lastError: String? = null
         if (apiKey.isNotBlank() && apiKey != "MY_GEMINI_API_KEY") {
             try {
                 val prompt = buildPrompt(rawTranscript, type, tone, customInstruction, language)
                 val responseText = callGeminiRest(apiKey, prompt)
                 if (responseText.isNotBlank()) {
-                    val parsed = parseDeliverableOutput(responseText, type)
+                    val parsed = parseDeliverableOutput(responseText, type, isEnglish)
                     return@withContext parsed.copy(isAiPowered = true, errorMessage = null)
                 }
             } catch (e: Exception) {
-                lastError = e.localizedMessage ?: "Erreur réseau / API Gemini"
+                lastError = e.localizedMessage ?: if (isEnglish) "Network / Gemini API error" else "Erreur réseau / API Gemini"
             }
         } else {
-            lastError = "Clé API Gemini non configurée (moteur local actif)"
+            lastError = if (isEnglish) "Gemini API key not configured (local engine active)" else "Clé API Gemini non configurée (moteur local actif)"
         }
 
         // Fallback engine: transforms voice notes with rich heuristics and structural templates
@@ -62,70 +63,139 @@ object DeliverableGenerator {
         customInstruction: String?,
         language: String
     ): String {
-        val langStr = if (language.startsWith("en", ignoreCase = true)) "en anglais" else "en français"
-        val toneInstruction = tone.promptModifier
+        val isEnglish = language.startsWith("en", ignoreCase = true)
+        val toneInstruction = tone.getPromptModifier(isEnglish)
 
-        val formatRequirement = when (type) {
-            DeliverableType.EMAIL_PRO -> """
-                Transforme cette transcription vocale en un E-MAIL PROFESSIONNEL parfait $langStr.
-                Structure obligatoire :
-                - Objet : [Un objet clair, percutant et explicite]
-                - Formule de politesse d'ouverture (ex: Bonjour Madame / Monsieur,)
-                - Corps de l'email : clair, bien découpé en 2 à 3 paragraphes concis, sans remplissage inutile.
-                - Formule de politesse de clôture (ex: Bien cordialement,)
-                - Signature type : [Nom / Fonction]
-            """.trimIndent()
+        val formatRequirement = if (isEnglish) {
+            when (type) {
+                DeliverableType.EMAIL_PRO -> """
+                    Transform this voice transcription into a perfect, professional business EMAIL in ENGLISH.
+                    Mandatory structure:
+                    - Subject: [Clear, compelling and explicit subject line in English]
+                    - Professional greeting (e.g., Dear Team, / Hello [Name],)
+                    - Email body: clear, well-structured into 2 to 3 concise paragraphs, zero fluff.
+                    - Professional sign-off (e.g., Best regards, / Sincerely,)
+                    - Signature placeholder: [Name / Title]
+                """.trimIndent()
 
-            DeliverableType.MEETING_TASKS -> """
-                Transforme cette transcription en un COMPTE-RENDU STRUCTURÉ AVEC PLAN D'ACTION $langStr.
-                Structure obligatoire :
-                1. RÉSUMÉ EXÉCUTIF (2-3 phrases clés)
-                2. DÉCISIONS CLÉS VALIDÉES (liste à puces des décisions prises)
-                3. PLAN D'ACTIONS & TÂCHES (liste de tâches claires sous la forme '- [ ] Action: Responsable | Échéance')
-                
-                Après le texte principal, ajoute une section spéciale délimitée par `---CHECKLIST_JSON---` contenant un tableau JSON d'objets avec les champs "text" (intitulé de la tâche), "assignee" (personne ou "Équipe"), et "deadline" (si mentionnée ou "À définir").
-            """.trimIndent()
+                DeliverableType.MEETING_TASKS -> """
+                    Transform this voice transcription into a STRUCTURED MEETING SUMMARY & ACTION PLAN in ENGLISH.
+                    Mandatory structure:
+                    1. EXECUTIVE SUMMARY (2-3 key sentences in English)
+                    2. KEY DECISIONS (bulleted list of agreed decisions in English)
+                    3. ACTION ITEMS & CHECKLIST (clear task list formatted as '- [ ] Action: Owner | Deadline' in English)
+                    
+                    After the main text, add a special section delimited by `---CHECKLIST_JSON---` containing a valid JSON array of objects with keys "text" (task title in English), "assignee" (person or "Team"), and "deadline" (if mentioned or "TBD").
+                """.trimIndent()
 
-            DeliverableType.CONTENT_CREATOR -> """
-                Transforme cette transcription en un CONTENU ÉDITORIAL PRÊT À PUBLIER $langStr.
-                Fournis deux variantes bien distinctes :
-                
-                === OPTION 1 : POST LINKEDIN (Max 1300 caractères) ===
-                - Accroche percutante (1-2 lignes qui créent la curiosité)
-                - Corps aéré (sauts de lignes réguliers, emojis professionnels avec modération, bullet points)
-                - Enseignement ou perspective concrète
-                - Appel à l'action (CTA engageant posant une question)
-                - 3 à 5 Hashtags stratégiques
-                
-                === OPTION 2 : SCRIPT VIDÉO COURT (Reels / TikTok / Shorts) ===
-                - 0-3s [Accroche visuelle & verbale]
-                - 4-30s [Développement / Démonstration / Storytelling]
-                - 31-45s [Chute & Appel à l'action clair]
-            """.trimIndent()
+                DeliverableType.CONTENT_CREATOR -> """
+                    Transform this voice transcription into READY-TO-PUBLISH EDITORIAL CONTENT in ENGLISH.
+                    Provide two distinct options:
+                    
+                    === OPTION 1: LINKEDIN POST (Max 1300 characters in English) ===
+                    - Compelling hook (1-2 lines creating curiosity)
+                    - Clean body (spacious line breaks, professional emojis used moderately, bullet points)
+                    - Concrete insight or actionable lesson
+                    - Call to action (engaging closing question)
+                    - 3 to 5 strategic hashtags in English
+                    
+                    === OPTION 2: SHORT VIDEO SCRIPT (Reels / TikTok / Shorts in English) ===
+                    - 0-3s [Visual & Verbal Hook]
+                    - 4-30s [Core Insight / Demo / Storytelling]
+                    - 31-45s [Punchy ending & Clear Call to Action]
+                """.trimIndent()
 
-            DeliverableType.CUSTOM -> """
-                Applique la consigne personnalisée suivante à cette transcription vocale $langStr :
-                Consigne : ${customInstruction ?: "Synthétise et structure ce texte de manière professionnelle."}
-            """.trimIndent()
+                DeliverableType.CUSTOM -> """
+                    Apply the following custom instruction to this voice transcription in ENGLISH:
+                    Instruction: ${customInstruction ?: "Synthesize and structure this content into a professional executive deliverable in English."}
+                """.trimIndent()
+            }
+        } else {
+            when (type) {
+                DeliverableType.EMAIL_PRO -> """
+                    Transforme cette transcription vocale en un E-MAIL PROFESSIONNEL parfait en français.
+                    Structure obligatoire :
+                    - Objet : [Un objet clair, percutant et explicite]
+                    - Formule de politesse d'ouverture (ex: Bonjour Madame / Monsieur,)
+                    - Corps de l'email : clair, bien découpé en 2 à 3 paragraphes concis, sans remplissage inutile.
+                    - Formule de politesse de clôture (ex: Bien cordialement,)
+                    - Signature type : [Nom / Fonction]
+                """.trimIndent()
+
+                DeliverableType.MEETING_TASKS -> """
+                    Transforme cette transcription en un COMPTE-RENDU STRUCTURÉ AVEC PLAN D'ACTION en français.
+                    Structure obligatoire :
+                    1. RÉSUMÉ EXÉCUTIF (2-3 phrases clés)
+                    2. DÉCISIONS CLÉS VALIDÉES (liste à puces des décisions prises)
+                    3. PLAN D'ACTIONS & TÂCHES (liste de tâches claires sous la forme '- [ ] Action: Responsable | Échéance')
+                    
+                    Après le texte principal, ajoute une section spéciale délimitée par `---CHECKLIST_JSON---` contenant un tableau JSON d'objets avec les champs "text" (intitulé de la tâche), "assignee" (personne ou "Équipe"), et "deadline" (si mentionnée ou "À définir").
+                """.trimIndent()
+
+                DeliverableType.CONTENT_CREATOR -> """
+                    Transforme cette transcription en un CONTENU ÉDITORIAL PRÊT À PUBLIER en français.
+                    Fournis deux variantes bien distinctes :
+                    
+                    === OPTION 1 : POST LINKEDIN (Max 1300 caractères) ===
+                    - Accroche percutante (1-2 lignes qui créent la curiosité)
+                    - Corps aéré (sauts de lignes réguliers, emojis professionnels avec modération, bullet points)
+                    - Enseignement ou perspective concrète
+                    - Appel à l'action (CTA engageant posant une question)
+                    - 3 à 5 Hashtags stratégiques
+                    
+                    === OPTION 2 : SCRIPT VIDÉO COURT (Reels / TikTok / Shorts) ===
+                    - 0-3s [Accroche visuelle & verbale]
+                    - 4-30s [Développement / Démonstration / Storytelling]
+                    - 31-45s [Chute & Appel à l'action clair]
+                """.trimIndent()
+
+                DeliverableType.CUSTOM -> """
+                    Applique la consigne personnalisée suivante à cette transcription vocale en français :
+                    Consigne : ${customInstruction ?: "Synthétise et structure ce texte de manière professionnelle."}
+                """.trimIndent()
+            }
         }
 
-        return """
-            Tu es l'assistant de productivité expert de l'application 'Dictaphone IA - De la voix au flux de travail'.
-            Ta mission est de convertir une capture vocale spontanée, potentiellement hésitante ou désordonnée, en un livrable professionnel soigné et directement exploitable.
-            
-            Consignes éditoriales :
-            - Langue cible : $langStr
-            - Tonalité : $toneInstruction
-            - Supprime les tics de langage, hésitations, redondances et formulations orales maladroites.
-            - Restitue fidèlement toutes les idées et décisions clés.
-            
-            $formatRequirement
-            
-            TRANSCRIPTION VOCALE BRUTE :
-            \"\"\"
-            $rawTranscript
-            \"\"\"
-        """.trimIndent()
+        return if (isEnglish) {
+            """
+                You are the expert productivity assistant for the application 'Dictaphone IA - From Voice to Workflow'.
+                Your mission is to convert a spontaneous, conversational, or messy voice capture into a polished, high-value professional deliverable.
+                
+                CRITICAL LANGUAGE DIRECTIVE:
+                - Target Language: ENGLISH.
+                - You MUST output the entire deliverable in ENGLISH.
+                - If the raw voice transcription below is in French or any other language, you MUST TRANSLATE all ideas, facts, and intentions faithfully into fluent, natural, professional ENGLISH.
+                - All headings, titles, bullet points, greetings, closings, and checklist items MUST BE IN ENGLISH.
+                - Tone: $toneInstruction
+                - Remove verbal filler, hesitations, stuttering, repetitions, and informal spoken glitches.
+                - Accurately preserve all substantive facts, figures, names, and decisions.
+                
+                $formatRequirement
+                
+                RAW VOICE TRANSCRIPTION:
+                \"\"\"
+                $rawTranscript
+                \"\"\"
+            """.trimIndent()
+        } else {
+            """
+                Tu es l'assistant de productivité expert de l'application 'Dictaphone IA - De la voix au flux de travail'.
+                Ta mission est de convertir une capture vocale spontanée, potentiellement hésitante ou désordonnée, en un livrable professionnel soigné et directement exploitable.
+                
+                Consignes éditoriales :
+                - Langue cible : en français
+                - Tonalité : $toneInstruction
+                - Supprime les tics de langage, hésitations, redondances et formulations orales maladroites.
+                - Restitue fidèlement toutes les idées et décisions clés.
+                
+                $formatRequirement
+                
+                TRANSCRIPTION VOCALE BRUTE :
+                \"\"\"
+                $rawTranscript
+                \"\"\"
+            """.trimIndent()
+        }
     }
 
     private fun callGeminiRest(apiKey: String, prompt: String): String {
@@ -168,7 +238,7 @@ object DeliverableGenerator {
         return part.optString("text", "")
     }
 
-    private fun parseDeliverableOutput(output: String, type: DeliverableType): GenerationResult {
+    private fun parseDeliverableOutput(output: String, type: DeliverableType, isEnglish: Boolean = false): GenerationResult {
         if (type == DeliverableType.MEETING_TASKS && output.contains("---CHECKLIST_JSON---")) {
             val parts = output.split("---CHECKLIST_JSON---")
             val content = parts[0].trim()
@@ -189,8 +259,8 @@ object DeliverableGenerator {
                     taskList.add(JSONObject().apply {
                         put("text", cleanText)
                         put("isDone", false)
-                        put("assignee", "Équipe")
-                        put("deadline", "À définir")
+                        put("assignee", if (isEnglish) "Team" else "Équipe")
+                        put("deadline", if (isEnglish) "TBD" else "À définir")
                     })
                 }
             }
@@ -269,8 +339,15 @@ object DeliverableGenerator {
             }
 
             DeliverableType.CONTENT_CREATOR -> {
-                val linkedInHeader = "🚀 POST LINKEDIN (Format court & percutant)"
+                val linkedInHeader = if (isFrench) "🚀 POST LINKEDIN (Format court & percutant)" else "🚀 LINKEDIN POST (Concise & Impactful)"
                 val hook = if (isFrench) "👉 La clé pour transformer une simple idée en résultat concret ?" else "👉 The real key to turning raw ideas into tangible momentum?"
+                val takeawayHeader = if (isFrench) "💡 Ce qu'il faut en retenir :" else "💡 Key Takeaways:"
+                val takeaway1 = if (isFrench) "• L'action prime sur la réflexion prolongée" else "• Execution beats prolonged contemplation"
+                val takeaway2 = if (isFrench) "• Structurer ses pensées permet de gagner des heures chaque semaine" else "• Structuring thoughts saves hours every single week"
+                val takeaway3 = if (isFrench) "• Les bons outils amplifient la clarté" else "• The right tools amplify clarity and velocity"
+                val cta = if (isFrench) "💬 Et vous, quelle méthode utilisez-vous pour capturer vos éclairs de génie ? Partagez vos astuces en commentaire !" else "💬 How do you capture and structure your best ideas on the go? Drop your thoughts below!"
+                val hashtags = if (isFrench) "#Productivite #IntelligenceArtificielle #Organisation #Leadership #Innovation" else "#Productivity #ArtificialIntelligence #Workflow #Leadership #Innovation"
+
                 val linkedInBody = """
 $linkedInHeader
 
@@ -278,17 +355,17 @@ $hook
 
 $cleanRaw
 
-💡 Ce qu'il faut en retenir :
-• L'action prime sur la réflexion prolongée
-• Structurer ses pensées permet de gagner des heures chaque semaine
-• Les bons outils amplifient la clarté
+$takeawayHeader
+$takeaway1
+$takeaway2
+$takeaway3
 
-💬 Et vous, quelle méthode utilisez-vous pour capturer vos éclairs de génie ? Partagez vos astuces en commentaire !
+$cta
 
-#Productivite #IntelligenceArtificielle #Organisation #Leadership #Innovation
+$hashtags
                 """.trimIndent()
 
-                val videoScript = """
+                val videoScript = if (isFrench) """
 🎬 SCRIPT VIDÉO COURT (TikTok / Reels / Shorts)
 
 [0-3s] ACCROCHE :
@@ -300,6 +377,18 @@ $cleanRaw
 
 [31-45s] APPEL À L'ACTION :
 « Testez dès aujourd'hui et libérez votre esprit. Le lien est disponible sur notre profil ! »
+                """.trimIndent() else """
+🎬 SHORT VIDEO SCRIPT (TikTok / Reels / Shorts)
+
+[0-3s] HOOK:
+"Stop losing your best ideas while walking or commuting!"
+
+[4-30s] CORE INSIGHT:
+"Watch how a quick 30-second voice memo transforms into an executive email and an actionable checklist in seconds using AI."
+(Cut to recording audio -> cut to instant generated deliverable)
+
+[31-45s] CALL TO ACTION:
+"Try it today and keep your workflow moving effortlessly. Link in bio!"
                 """.trimIndent()
 
                 GenerationResult(
@@ -309,10 +398,12 @@ $cleanRaw
             }
 
             DeliverableType.CUSTOM -> {
+                val header = if (isFrench) "🎯 GABARIT PERSONNALISÉ" else "🎯 CUSTOM TEMPLATE"
+                val instructionLabel = if (isFrench) "Consigne appliquée :" else "Applied instruction:"
                 val customPrompt = customInstruction ?: if (isFrench) "Synthèse structurée" else "Structured summary"
                 val text = """
-🎯 GABARIT PERSONNALISÉ
-Consigne appliquée : $customPrompt
+$header
+$instructionLabel $customPrompt
 
 $cleanRaw
                 """.trimIndent()

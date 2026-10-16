@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="history_search_placeholder">Rechercher dans les notes et livrables...</string>
+    <string name="history_clear_search">Effacer</string>
+    <string name="history_filter_all">Tous (%1$d)</string>
+    <string name="history_filter_favorites">Favoris</string>
+    <string name="history_empty_title">Aucune note vocale trouvée</string>
+    <string name="history_empty_subtitle">Enregistrez vos premières idées depuis l\'accueil.</string>
+    <string name="history_share_chooser">Partager la note</string>
+    <string name="history_clip_label">Note</string>
+    <string name="history_copied_toast">Copié dans le presse-papier</string>
+    <string name="history_favorite_cd">Favori</string>
+    <string name="history_play_audio_cd">Lecture audio</string>
+    <string name="history_audio_duration">%1$ds d\'enregistrement audio</string>
+    <string name="history_copy_cd">Copier</string>
+    <string name="history_share_cd">Partager</string>
+    <string name="history_delete_cd">Supprimer</string>
+</resources>

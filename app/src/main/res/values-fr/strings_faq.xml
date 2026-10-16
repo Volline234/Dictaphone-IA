@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="faq_header_title">Réglages, Guide &amp; FAQ</string>
+    <string name="faq_header_subtitle">Affichage, conseils d\'utilisation et protection des données</string>
+
+    <string name="faq_tips_title">💡 Conseils pour une retranscription optimale</string>
+    <string name="faq_tip1_title">1. Parlez naturellement</string>
+    <string name="faq_tip1_desc">Inutile d\'articuler exagérément : l\'IA sait gommer les hésitations et les tics de langage.</string>
+    <string name="faq_tip2_title">2. Choisissez le bon format</string>
+    <string name="faq_tip2_desc">Sélectionnez \'E-mail pro\' pour un client, ou \'Compte-rendu\' pour extraire des actions avec checklist.</string>
+    <string name="faq_tip3_title">3. Modifiez avant d\'exporter</string>
+    <string name="faq_tip3_desc">Vous pouvez éditer la transcription brute à tout moment et régénérer le livrable avec un autre ton.</string>
+
+    <string name="faq_section_title">❓ Foire Aux Questions</string>
+    <string name="faq_q1">Comment fonctionne la transcription ?</string>
+    <string name="faq_a1">L\'application capture le flux audio de votre micro et utilise des modèles d\'IA pour transformer la parole en texte et structurer instantanément les livrables.</string>
+    <string name="faq_q2">Mes enregistrements sont-ils privés et sécurisés ?</string>
+    <string name="faq_a2">Conformément au RGPD et aux politiques de confidentialité Google Play, vos enregistrements sont stockés localement sur votre appareil et protégés. Vous pouvez les effacer à tout moment.</string>
+    <string name="faq_q3">Comment changer la tonalité d\'un document ?</string>
+    <string name="faq_a3">Sur la fiche du livrable généré, cliquez simplement sur l\'un des boutons de tonalité (Formel, Décontracté, Synthétique) : l\'IA reformule le texte en quelques secondes sans ré-enregistrement.</string>
+    <string name="faq_q4">Comment changer la langue ou passer en mode sombre ?</string>
+    <string name="faq_a4">En haut de cet écran, choisissez Clair, Sombre ou Système pour l\'affichage, et Français, English ou la langue de l\'appareil pour les menus. Le bouton soleil / lune de l\'accueil bascule jour / nuit en un geste. La langue des livrables IA se règle avec le sélecteur FR / EN de l\'accueil.</string>
+
+    <string name="faq_privacy_title">🔒 Données personnelles &amp; RGPD</string>
+    <string name="faq_erasure_title">Droit à l\'effacement des données</string>
+    <string name="faq_erasure_desc">Vous disposez d\'un contrôle total sur vos données audio et textes. Vous pouvez supprimer toutes vos notes et fichiers locaux en un seul clic.</string>
+    <string name="faq_delete_all_button">Supprimer toutes mes notes et données</string>
+    <string name="faq_delete_dialog_title">Confirmer la suppression ?</string>
+    <string name="faq_delete_dialog_text">Toutes vos notes vocales, transcriptions et fichiers audio associés seront définitivement effacés de votre appareil.</string>
+    <string name="faq_delete_dialog_confirm">Supprimer définitivement</string>
+    <string name="faq_delete_done_toast">Toutes vos données ont été supprimées.</string>
+</resources>

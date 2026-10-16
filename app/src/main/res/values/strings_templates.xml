@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="templates_title">Custom Templates</string>
+    <string name="templates_subtitle">Create your own AI rephrasing rules</string>
+    <string name="templates_new_button">New</string>
+    <string name="templates_create_title">Create a new template</string>
+    <string name="templates_name_label">Template name (e.g. Sales Pitch)</string>
+    <string name="templates_instruction_label">Instructions for AI (Custom prompt)</string>
+    <string name="templates_instruction_placeholder">E.g.: Turn this memo into a Q&amp;A list for an FAQ.</string>
+    <string name="templates_save_and_use">Save &amp; Use</string>
+    <string name="templates_selected_cd">Selected</string>
+</resources>
