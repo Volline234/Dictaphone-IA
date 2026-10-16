@@ -48,7 +48,7 @@ class ModelsAndEnumsTest {
             assertNotNull(tone.promptModifier)
             assertTrue(tone.promptModifier.isNotBlank())
         }
-        assertEquals("Formel, courtois et d'une rigueur professionnelle irréprochable", ToneType.FORMAL.promptModifier)
+        assertEquals("Utilise un ton formel, professionnel, élégant et rigoureux.", ToneType.FORMAL.promptModifier)
     }
 
     @Test
