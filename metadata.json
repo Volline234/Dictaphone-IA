@@ -1,1 +1,6 @@
-{"name":"Dictaphone-IA","description":"Dictaphone intelligent : capturez vos idées vocales et transformez-les instantanément en livrables professionnels structurés (E-mails, Comptes-rendus \u0026 tâches, Posts LinkedIn/Scripts) grâce à l\u0027IA.","requestFramePermissions":[],"majorCapabilities":["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]}
+{
+  "name": "Dictaphone IA",
+  "description": "Dictaphone intelligent : capturez vos idées vocales et transformez-les instantanément en livrables professionnels structurés (E-mails, Comptes-rendus & tâches, Posts LinkedIn/Scripts) grâce à l'IA.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
