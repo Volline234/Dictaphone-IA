@@ -1,6 +1,7 @@
 package com.example.data.remote
 
-import com.example.BuildConfig
+import android.os.Build
+import android.util.Base64
 import com.example.model.DeliverableType
 import com.example.model.ToneType
 import kotlinx.coroutines.Dispatchers
@@ -21,6 +22,89 @@ object DeliverableGenerator {
         .writeTimeout(60, TimeUnit.SECONDS)
         .build()
 
+    private fun isRobolectricUnitTest(): Boolean {
+        return try {
+            Build.FINGERPRINT.equals("robolectric", ignoreCase = true)
+        } catch (e: Throwable) {
+            true
+        }
+    }
+
+    /**
+     * Transcribes raw recorded audio bytes directly via Gemini 2.5 Flash multimodal API
+     * and generates the requested structured deliverable in one pass.
+     */
+    suspend fun generateDeliverableFromAudio(
+        audioBytes: ByteArray,
+        mimeType: String = "audio/mp4",
+        type: DeliverableType,
+        tone: ToneType,
+        customInstruction: String? = null,
+        language: String = "fr"
+    ): GenerationResult = withContext(Dispatchers.IO) {
+        val isEnglish = language.startsWith("en", ignoreCase = true)
+        val apiKey = ApiKeyProvider.getGeminiApiKey()
+
+        if (apiKey.isBlank()) {
+            val errMsg = if (isEnglish) {
+                "⚠️ Gemini API key is not configured."
+            } else {
+                "⚠️ Clé API Gemini non configurée."
+            }
+            return@withContext GenerationResult(
+                text = errMsg,
+                checklistJson = "[]",
+                rawTranscript = "",
+                isAiPowered = false,
+                errorMessage = errMsg
+            )
+        }
+
+        try {
+            val base64Audio = try {
+                Base64.encodeToString(audioBytes, Base64.NO_WRAP)
+            } catch (e: Throwable) {
+                java.util.Base64.getEncoder().encodeToString(audioBytes)
+            }
+            val prompt = buildAudioPrompt(type, tone, customInstruction, language)
+            val responseText = callGeminiMultimodalRest(
+                apiKey = apiKey,
+                prompt = prompt,
+                base64Audio = base64Audio,
+                mimeType = mimeType
+            )
+            if (responseText.isNotBlank()) {
+                return@withContext parseAudioDeliverableOutput(responseText, type, isEnglish)
+            }
+        } catch (e: Exception) {
+            val errMsg = if (isEnglish) {
+                "⚠️ Unable to transcribe the voice recording (${e.localizedMessage ?: "Network error"}). Please check your internet connection and tap Regenerate."
+            } else {
+                "⚠️ Impossible de transcrire l'enregistrement vocal (${e.localizedMessage ?: "Erreur réseau"}). Vérifiez votre connexion Internet puis appuyez sur Régénérer."
+            }
+            return@withContext GenerationResult(
+                text = errMsg,
+                checklistJson = "[]",
+                rawTranscript = "",
+                isAiPowered = false,
+                errorMessage = errMsg
+            )
+        }
+
+        val emptyMsg = if (isEnglish) {
+            "⚠️ No speech was detected in the recording. Please record again speaking clearly near the microphone."
+        } else {
+            "⚠️ Aucune parole n'a été détectée dans l'enregistrement. Veuillez réessayer en parlant clairement près du microphone."
+        }
+        return@withContext GenerationResult(
+            text = emptyMsg,
+            checklistJson = "[]",
+            rawTranscript = "",
+            isAiPowered = false,
+            errorMessage = emptyMsg
+        )
+    }
+
     suspend fun generateDeliverable(
         rawTranscript: String,
         type: DeliverableType,
@@ -28,21 +112,21 @@ object DeliverableGenerator {
         customInstruction: String? = null,
         language: String = "fr"
     ): GenerationResult = withContext(Dispatchers.IO) {
-        val apiKey = try {
-            BuildConfig.GEMINI_API_KEY
-        } catch (e: Exception) {
-            ""
-        }
-
+        val apiKey = ApiKeyProvider.getGeminiApiKey()
         val isEnglish = language.startsWith("en", ignoreCase = true)
         var lastError: String? = null
-        if (apiKey.isNotBlank() && apiKey != "MY_GEMINI_API_KEY") {
+
+        if (!isRobolectricUnitTest() && apiKey.isNotBlank()) {
             try {
                 val prompt = buildPrompt(rawTranscript, type, tone, customInstruction, language)
                 val responseText = callGeminiRest(apiKey, prompt)
                 if (responseText.isNotBlank()) {
                     val parsed = parseDeliverableOutput(responseText, type, isEnglish)
-                    return@withContext parsed.copy(isAiPowered = true, errorMessage = null)
+                    return@withContext parsed.copy(
+                        rawTranscript = rawTranscript,
+                        isAiPowered = true,
+                        errorMessage = null
+                    )
                 }
             } catch (e: Exception) {
                 lastError = e.localizedMessage ?: if (isEnglish) "Network / Gemini API error" else "Erreur réseau / API Gemini"
@@ -51,9 +135,156 @@ object DeliverableGenerator {
             lastError = if (isEnglish) "Gemini API key not configured (local engine active)" else "Clé API Gemini non configurée (moteur local actif)"
         }
 
-        // Fallback engine: transforms voice notes with rich heuristics and structural templates
+        // Fallback engine: transforms existing text transcript with structural templates
         val fallback = generateLocalStructuredDeliverable(rawTranscript, type, tone, customInstruction, language)
-        return@withContext fallback.copy(isAiPowered = false, errorMessage = lastError)
+        return@withContext fallback.copy(
+            rawTranscript = rawTranscript,
+            isAiPowered = false,
+            errorMessage = lastError
+        )
+    }
+
+    private fun buildAudioPrompt(
+        type: DeliverableType,
+        tone: ToneType,
+        customInstruction: String?,
+        language: String
+    ): String {
+        val isEnglish = language.startsWith("en", ignoreCase = true)
+        val toneInstruction = tone.getPromptModifier(isEnglish)
+        val formatRequirement = buildFormatRequirement(type, customInstruction, isEnglish)
+
+        return if (isEnglish) {
+            """
+                You are the expert productivity assistant for the application 'Dictaphone IA'.
+                Listen carefully to the attached user voice recording.
+                
+                STRICT RULES:
+                1. Transcribe ONLY what the user actually says in the audio recording. NEVER invent fictional meetings, fake names, or pre-filled topics that are not in the audio.
+                2. Target Language for the deliverable: ENGLISH.
+                3. Tone: $toneInstruction
+                4. Output format MUST strictly use these exact delimiters:
+                
+                ---RAW_TRANSCRIPT---
+                [Write the exact verbatim transcription of what the speaker said in the audio]
+                ---DELIVERABLE---
+                [Write the structured deliverable following the instructions below]
+                
+                $formatRequirement
+            """.trimIndent()
+        } else {
+            """
+                Tu es l'assistant de productivité expert de l'application 'Dictaphone IA'.
+                Écoute attentivement l'enregistrement vocal joint de l'utilisateur.
+                
+                RÈGLES STRICTES :
+                1. Transcris et traite UNIQUEMENT ce que l'utilisateur dit réellement dans l'enregistrement audio. N'invente JAMAIS de réunions fictives, de faux prénoms ou de sujets pré-remplis absents de l'audio.
+                2. Langue cible du livrable : FRANÇAIS.
+                3. Tonalité : $toneInstruction
+                4. Le format de sortie DOIT obligatoirement utiliser ces délimiteurs exacts :
+                
+                ---RAW_TRANSCRIPT---
+                [Écris ici la transcription exacte et fidèle des paroles prononcées dans l'audio]
+                ---DELIVERABLE---
+                [Écris ici le livrable structuré en suivant les consignes ci-dessous]
+                
+                $formatRequirement
+            """.trimIndent()
+        }
+    }
+
+    private fun buildFormatRequirement(
+        type: DeliverableType,
+        customInstruction: String?,
+        isEnglish: Boolean
+    ): String {
+        return if (isEnglish) {
+            when (type) {
+                DeliverableType.EMAIL_PRO -> """
+                    Transform this voice recording into a professional business EMAIL in ENGLISH.
+                    Mandatory structure:
+                    - Subject: [Clear, compelling and explicit subject line in English]
+                    - Professional greeting (e.g., Dear Team, / Hello,)
+                    - Email body: clear, well-structured into concise paragraphs based strictly on what was said.
+                    - Professional sign-off (e.g., Best regards, / Sincerely,)
+                """.trimIndent()
+
+                DeliverableType.MEETING_TASKS -> """
+                    Transform this voice recording into a STRUCTURED SUMMARY & ACTION PLAN in ENGLISH.
+                    Mandatory structure:
+                    1. EXECUTIVE SUMMARY (2-3 key sentences in English)
+                    2. KEY POINTS / DECISIONS (bulleted list in English)
+                    3. ACTION ITEMS & CHECKLIST (clear task list formatted as '- [ ] Action: Owner | Deadline' in English)
+                    
+                    After the main text, add a special section delimited by `---CHECKLIST_JSON---` containing a valid JSON array of objects with keys "text" (task title in English), "assignee" (person or "Team"), and "deadline" (if mentioned or "TBD").
+                """.trimIndent()
+
+                DeliverableType.CONTENT_CREATOR -> """
+                    Transform this voice recording into READY-TO-PUBLISH EDITORIAL CONTENT in ENGLISH.
+                    Provide two distinct options:
+                    
+                    === OPTION 1: LINKEDIN POST (Max 1300 characters in English) ===
+                    - Compelling hook (1-2 lines creating curiosity)
+                    - Clean body (spacious line breaks, bullet points)
+                    - Concrete insight or actionable lesson
+                    - Call to action (engaging closing question)
+                    - 3 to 5 strategic hashtags in English
+                    
+                    === OPTION 2: SHORT VIDEO SCRIPT (Reels / TikTok / Shorts in English) ===
+                    - 0-3s [Visual & Verbal Hook]
+                    - 4-30s [Core Insight / Development]
+                    - 31-45s [Punchy ending & Clear Call to Action]
+                """.trimIndent()
+
+                DeliverableType.CUSTOM -> """
+                    Apply the following custom instruction to this voice recording in ENGLISH:
+                    Instruction: ${customInstruction ?: "Synthesize and structure this content into a professional executive deliverable in English."}
+                """.trimIndent()
+            }
+        } else {
+            when (type) {
+                DeliverableType.EMAIL_PRO -> """
+                    Transforme cet enregistrement vocal en un E-MAIL PROFESSIONNEL parfait en français.
+                    Structure obligatoire :
+                    - Objet : [Un objet clair, percutant et explicite]
+                    - Formule de politesse d'ouverture (ex: Bonjour,)
+                    - Corps de l'email : clair, bien découpé en paragraphes concis basés strictement sur ce qui a été dit.
+                    - Formule de politesse de clôture (ex: Bien cordialement,)
+                """.trimIndent()
+
+                DeliverableType.MEETING_TASKS -> """
+                    Transforme cet enregistrement vocal en un COMPTE-RENDU STRUCTURÉ AVEC PLAN D'ACTION en français.
+                    Structure obligatoire :
+                    1. RÉSUMÉ EXÉCUTIF (2-3 phrases clés)
+                    2. POINTS CLÉS & DÉCISIONS (liste à puces)
+                    3. PLAN D'ACTIONS & TÂCHES (liste de tâches claires sous la forme '- [ ] Action: Responsable | Échéance')
+                    
+                    Après le texte principal, ajoute une section spéciale délimitée par `---CHECKLIST_JSON---` contenant un tableau JSON d'objets avec les champs "text" (intitulé de la tâche), "assignee" (personne ou "Équipe"), et "deadline" (si mentionnée ou "À définir").
+                """.trimIndent()
+
+                DeliverableType.CONTENT_CREATOR -> """
+                    Transforme cet enregistrement vocal en un CONTENU ÉDITORIAL PRÊT À PUBLIER en français.
+                    Fournis deux variantes bien distinctes :
+                    
+                    === OPTION 1 : POST LINKEDIN (Max 1300 caractères) ===
+                    - Accroche percutante (1-2 lignes qui créent la curiosité)
+                    - Corps aéré (sauts de lignes réguliers, bullet points)
+                    - Enseignement ou perspective concrète
+                    - Appel à l'action (CTA engageant posant une question)
+                    - 3 à 5 Hashtags stratégiques
+                    
+                    === OPTION 2 : SCRIPT VIDÉO COURT (Reels / TikTok / Shorts) ===
+                    - 0-3s [Accroche visuelle & verbale]
+                    - 4-30s [Développement / Storytelling]
+                    - 31-45s [Chute & Appel à l'action clair]
+                """.trimIndent()
+
+                DeliverableType.CUSTOM -> """
+                    Applique la consigne personnalisée suivante à cet enregistrement vocal en français :
+                    Consigne : ${customInstruction ?: "Synthétise et structure ce texte de manière professionnelle."}
+                """.trimIndent()
+            }
+        }
     }
 
     private fun buildPrompt(
@@ -65,96 +296,7 @@ object DeliverableGenerator {
     ): String {
         val isEnglish = language.startsWith("en", ignoreCase = true)
         val toneInstruction = tone.getPromptModifier(isEnglish)
-
-        val formatRequirement = if (isEnglish) {
-            when (type) {
-                DeliverableType.EMAIL_PRO -> """
-                    Transform this voice transcription into a perfect, professional business EMAIL in ENGLISH.
-                    Mandatory structure:
-                    - Subject: [Clear, compelling and explicit subject line in English]
-                    - Professional greeting (e.g., Dear Team, / Hello [Name],)
-                    - Email body: clear, well-structured into 2 to 3 concise paragraphs, zero fluff.
-                    - Professional sign-off (e.g., Best regards, / Sincerely,)
-                    - Signature placeholder: [Name / Title]
-                """.trimIndent()
-
-                DeliverableType.MEETING_TASKS -> """
-                    Transform this voice transcription into a STRUCTURED MEETING SUMMARY & ACTION PLAN in ENGLISH.
-                    Mandatory structure:
-                    1. EXECUTIVE SUMMARY (2-3 key sentences in English)
-                    2. KEY DECISIONS (bulleted list of agreed decisions in English)
-                    3. ACTION ITEMS & CHECKLIST (clear task list formatted as '- [ ] Action: Owner | Deadline' in English)
-                    
-                    After the main text, add a special section delimited by `---CHECKLIST_JSON---` containing a valid JSON array of objects with keys "text" (task title in English), "assignee" (person or "Team"), and "deadline" (if mentioned or "TBD").
-                """.trimIndent()
-
-                DeliverableType.CONTENT_CREATOR -> """
-                    Transform this voice transcription into READY-TO-PUBLISH EDITORIAL CONTENT in ENGLISH.
-                    Provide two distinct options:
-                    
-                    === OPTION 1: LINKEDIN POST (Max 1300 characters in English) ===
-                    - Compelling hook (1-2 lines creating curiosity)
-                    - Clean body (spacious line breaks, professional emojis used moderately, bullet points)
-                    - Concrete insight or actionable lesson
-                    - Call to action (engaging closing question)
-                    - 3 to 5 strategic hashtags in English
-                    
-                    === OPTION 2: SHORT VIDEO SCRIPT (Reels / TikTok / Shorts in English) ===
-                    - 0-3s [Visual & Verbal Hook]
-                    - 4-30s [Core Insight / Demo / Storytelling]
-                    - 31-45s [Punchy ending & Clear Call to Action]
-                """.trimIndent()
-
-                DeliverableType.CUSTOM -> """
-                    Apply the following custom instruction to this voice transcription in ENGLISH:
-                    Instruction: ${customInstruction ?: "Synthesize and structure this content into a professional executive deliverable in English."}
-                """.trimIndent()
-            }
-        } else {
-            when (type) {
-                DeliverableType.EMAIL_PRO -> """
-                    Transforme cette transcription vocale en un E-MAIL PROFESSIONNEL parfait en français.
-                    Structure obligatoire :
-                    - Objet : [Un objet clair, percutant et explicite]
-                    - Formule de politesse d'ouverture (ex: Bonjour Madame / Monsieur,)
-                    - Corps de l'email : clair, bien découpé en 2 à 3 paragraphes concis, sans remplissage inutile.
-                    - Formule de politesse de clôture (ex: Bien cordialement,)
-                    - Signature type : [Nom / Fonction]
-                """.trimIndent()
-
-                DeliverableType.MEETING_TASKS -> """
-                    Transforme cette transcription en un COMPTE-RENDU STRUCTURÉ AVEC PLAN D'ACTION en français.
-                    Structure obligatoire :
-                    1. RÉSUMÉ EXÉCUTIF (2-3 phrases clés)
-                    2. DÉCISIONS CLÉS VALIDÉES (liste à puces des décisions prises)
-                    3. PLAN D'ACTIONS & TÂCHES (liste de tâches claires sous la forme '- [ ] Action: Responsable | Échéance')
-                    
-                    Après le texte principal, ajoute une section spéciale délimitée par `---CHECKLIST_JSON---` contenant un tableau JSON d'objets avec les champs "text" (intitulé de la tâche), "assignee" (personne ou "Équipe"), et "deadline" (si mentionnée ou "À définir").
-                """.trimIndent()
-
-                DeliverableType.CONTENT_CREATOR -> """
-                    Transforme cette transcription en un CONTENU ÉDITORIAL PRÊT À PUBLIER en français.
-                    Fournis deux variantes bien distinctes :
-                    
-                    === OPTION 1 : POST LINKEDIN (Max 1300 caractères) ===
-                    - Accroche percutante (1-2 lignes qui créent la curiosité)
-                    - Corps aéré (sauts de lignes réguliers, emojis professionnels avec modération, bullet points)
-                    - Enseignement ou perspective concrète
-                    - Appel à l'action (CTA engageant posant une question)
-                    - 3 à 5 Hashtags stratégiques
-                    
-                    === OPTION 2 : SCRIPT VIDÉO COURT (Reels / TikTok / Shorts) ===
-                    - 0-3s [Accroche visuelle & verbale]
-                    - 4-30s [Développement / Démonstration / Storytelling]
-                    - 31-45s [Chute & Appel à l'action clair]
-                """.trimIndent()
-
-                DeliverableType.CUSTOM -> """
-                    Applique la consigne personnalisée suivante à cette transcription vocale en français :
-                    Consigne : ${customInstruction ?: "Synthétise et structure ce texte de manière professionnelle."}
-                """.trimIndent()
-            }
-        }
+        val formatRequirement = buildFormatRequirement(type, customInstruction, isEnglish)
 
         return if (isEnglish) {
             """
@@ -198,9 +340,61 @@ object DeliverableGenerator {
         }
     }
 
+    private fun callGeminiMultimodalRest(
+        apiKey: String,
+        prompt: String,
+        base64Audio: String,
+        mimeType: String
+    ): String {
+        val url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"
+        val jsonBody = JSONObject().apply {
+            val contentsArray = JSONArray().apply {
+                val contentObj = JSONObject().apply {
+                    val partsArray = JSONArray().apply {
+                        put(JSONObject().apply { put("text", prompt) })
+                        put(JSONObject().apply {
+                            put("inline_data", JSONObject().apply {
+                                put("mime_type", mimeType)
+                                put("data", base64Audio)
+                            })
+                        })
+                    }
+                    put("parts", partsArray)
+                }
+                put(contentObj)
+            }
+            put("contents", contentsArray)
+        }
+
+        val mediaType = "application/json; charset=utf-8".toMediaType()
+        val requestBody = jsonBody.toString().toRequestBody(mediaType)
+        val request = Request.Builder()
+            .url(url)
+            .addHeader("x-goog-api-key", apiKey)
+            .post(requestBody)
+            .build()
+
+        val response = client.newCall(request).execute()
+        val bodyStr = response.body?.string() ?: ""
+        if (!response.isSuccessful) {
+            throw Exception("HTTP ${response.code}: $bodyStr")
+        }
+
+        val json = JSONObject(bodyStr)
+        val candidates = json.optJSONArray("candidates") ?: return ""
+        val candidate = candidates.optJSONObject(0) ?: return ""
+        val content = candidate.optJSONObject("content") ?: return ""
+        val parts = content.optJSONArray("parts") ?: return ""
+        val sb = StringBuilder()
+        for (i in 0 until parts.length()) {
+            val part = parts.optJSONObject(i)
+            val txt = part?.optString("text", "") ?: ""
+            if (txt.isNotEmpty()) sb.append(txt)
+        }
+        return sb.toString()
+    }
+
     private fun callGeminiRest(apiKey: String, prompt: String): String {
-        // API key is sent via HTTP header instead of URL query parameter
-        // to prevent exposure in network logs, proxies, and request history
         val url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"
         val jsonBody = JSONObject().apply {
             val contentsArray = JSONArray().apply {
@@ -236,6 +430,40 @@ object DeliverableGenerator {
         val parts = content.optJSONArray("parts") ?: return ""
         val part = parts.optJSONObject(0) ?: return ""
         return part.optString("text", "")
+    }
+
+    private fun parseAudioDeliverableOutput(
+        output: String,
+        type: DeliverableType,
+        isEnglish: Boolean
+    ): GenerationResult {
+        var extractedTranscript = ""
+        var deliverableBody = output.trim()
+
+        if (deliverableBody.contains("---DELIVERABLE---")) {
+            val sections = deliverableBody.split("---DELIVERABLE---", limit = 2)
+            extractedTranscript = sections[0]
+                .replace("---RAW_TRANSCRIPT---", "")
+                .trim()
+            deliverableBody = sections[1].trim()
+        } else if (deliverableBody.contains("---RAW_TRANSCRIPT---")) {
+            val cleaned = deliverableBody.replace("---RAW_TRANSCRIPT---", "").trim()
+            extractedTranscript = cleaned.lines().firstOrNull()?.trim() ?: cleaned.take(200)
+            deliverableBody = cleaned
+        }
+
+        val parsed = parseDeliverableOutput(deliverableBody, type, isEnglish)
+        val finalTranscript = if (extractedTranscript.isNotBlank()) {
+            extractedTranscript
+        } else {
+            parsed.text.lines().firstOrNull { it.isNotBlank() }?.take(120) ?: ""
+        }
+
+        return parsed.copy(
+            rawTranscript = finalTranscript,
+            isAiPowered = true,
+            errorMessage = null
+        )
     }
 
     private fun parseDeliverableOutput(output: String, type: DeliverableType, isEnglish: Boolean = false): GenerationResult {
@@ -299,7 +527,7 @@ object DeliverableGenerator {
                     ToneType.DYNAMIC -> if (isFrench) "\n\nOn avance ensemble sur ces priorités !\n\nExcellente journée,\n[Votre Nom]" else "\n\nLet's make it happen!\n\nBest,\n[Your Name]"
                 }
                 val text = "$subject\n\n$greeting\n\n$body$closing"
-                GenerationResult(text = text, checklistJson = "[]")
+                GenerationResult(text = text, checklistJson = "[]", rawTranscript = cleanRaw)
             }
 
             DeliverableType.MEETING_TASKS -> {
@@ -335,7 +563,7 @@ object DeliverableGenerator {
                     })
                 }
 
-                GenerationResult(text = fullText, checklistJson = jsonArray.toString())
+                GenerationResult(text = fullText, checklistJson = jsonArray.toString(), rawTranscript = cleanRaw)
             }
 
             DeliverableType.CONTENT_CREATOR -> {
@@ -393,7 +621,8 @@ $hashtags
 
                 GenerationResult(
                     text = "$linkedInBody\n\n--------------------------------\n\n$videoScript",
-                    checklistJson = "[]"
+                    checklistJson = "[]",
+                    rawTranscript = cleanRaw
                 )
             }
 
@@ -407,7 +636,7 @@ $instructionLabel $customPrompt
 
 $cleanRaw
                 """.trimIndent()
-                GenerationResult(text = text, checklistJson = "[]")
+                GenerationResult(text = text, checklistJson = "[]", rawTranscript = cleanRaw)
             }
         }
     }
@@ -416,6 +645,7 @@ $cleanRaw
 data class GenerationResult(
     val text: String,
     val checklistJson: String,
+    val rawTranscript: String = "",
     val isAiPowered: Boolean = true,
     val errorMessage: String? = null
 )

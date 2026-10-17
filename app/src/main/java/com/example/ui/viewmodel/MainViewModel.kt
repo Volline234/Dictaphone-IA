@@ -173,97 +173,32 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             list
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-        // Seed initial example note if fresh launch
-        seedInitialNoteIfEmpty()
+        // Purge any legacy pre-filled demo notes so only the user's real recordings remain
+        purgeLegacyDemoNotes()
     }
 
-    private fun seedInitialNoteIfEmpty() {
+    private fun purgeLegacyDemoNotes() {
         viewModelScope.launch {
-            val isFirstLaunch = prefs.getBoolean("is_first_launch_seed", true)
-            if (isFirstLaunch) {
-                prefs.edit().putBoolean("is_first_launch_seed", false).apply()
-                val seedLanguage = LocaleHelper.effectiveLanguageCode(getApplication())
-                val isEnglishSeed = seedLanguage == "en"
-                val exampleTranscript = if (isEnglishSeed) {
-                    "We agreed with the team to launch the new mobile version on the 15th of next month. Thomas is handling the marketing visuals by Friday and Sarah is finalizing the API. We need to send a recap to the whole management committee before 6pm tomorrow."
-                } else {
-                    "On a validé avec l'équipe le lancement de la nouvelle version mobile le 15 du mois prochain. Thomas s'occupe des visuels marketing pour vendredi et Sarah finalise l'API. Il faut envoyer un récapitulatif à tout le comité de direction avant demain 18h."
-                }
-                val sampleEmail = if (isEnglishSeed) {
-                    """
-Subject: Mobile launch schedule approved & action plan
-
-Hello everyone,
-
-Following our kick-off meeting, I am confirming the approved schedule for the rollout of our new mobile version, set for the 15th of next month.
-
-Here are the agreed responsibilities and deadlines:
-• Thomas: Finalize the marketing visuals (deadline: Friday)
-• Sarah: Complete the technical API development
-• Management: Send the summary recap before 6:00pm tomorrow
-
-I remain available for any adjustments before the next checkpoint.
-
-Best regards,
-The Project Team
-                    """.trimIndent()
-                } else {
-                    """
-Objet : Validation du calendrier de lancement mobile & plan d'action
-
-Bonjour à tous,
-
-À la suite de notre réunion de cadrage, je vous confirme la validation du calendrier pour le déploiement de notre nouvelle version mobile, fixé au 15 du mois prochain.
-
-Voici les responsabilités et échéances validées :
-• Thomas : Finalisation des visuels marketing (échéance : vendredi)
-• Sarah : Clôture des développements de l'API technique
-• Direction : Envoi du récapitulatif synthétique avant demain 18h00
-
-Je reste disponible pour tout ajustement d'ici le point d'étape.
-
-Bien cordialement,
-L'équipe Projet
-                    """.trimIndent()
-                }
-
-                // (text, isDone, assignee, deadline)
-                val seedTasks = if (isEnglishSeed) {
-                    listOf(
-                        listOf("Finalize the marketing visuals", false, "Thomas", "Friday"),
-                        listOf("Complete the API development", true, "Sarah", "This week"),
-                        listOf("Send the minutes to the committee", false, "Team", "Tomorrow 6pm")
-                    )
-                } else {
-                    listOf(
-                        listOf("Finaliser les visuels marketing", false, "Thomas", "Vendredi"),
-                        listOf("Clôturer les développements API", true, "Sarah", "Cette semaine"),
-                        listOf("Transmettre le compte-rendu au comité", false, "Équipe", "Demain 18h")
-                    )
-                }
-                val checklist = JSONArray().apply {
-                    seedTasks.forEach { task ->
-                        put(JSONObject().apply {
-                            put("text", task[0])
-                            put("isDone", task[1])
-                            put("assignee", task[2])
-                            put("deadline", task[3])
-                        })
-                    }
-                }.toString()
-
-                val note = VoiceNote(
-                    title = if (isEnglishSeed) "New mobile version launch" else "Lancement nouvelle version mobile",
-                    rawTranscript = exampleTranscript,
-                    language = seedLanguage,
-                    deliverableType = DeliverableType.EMAIL_PRO.name,
-                    toneType = ToneType.FORMAL.name,
-                    generatedContent = sampleEmail,
-                    checklistJson = checklist,
-                    isFavorite = true,
-                    durationSeconds = 18
+            try {
+                val legacyMarkers = listOf(
+                    "Lancement nouvelle version mobile",
+                    "New mobile version launch",
+                    "Point d'étape rapide : accord sur le déploiement vendredi prochain",
+                    "Quick team sync: we agreed on the marketing release next Friday",
+                    "On a validé avec l'équipe le lancement de la nouvelle version mobile",
+                    "We agreed with the team to launch the new mobile version"
                 )
-                repository.insertNote(note)
+                repository.allNotes.collect { notes ->
+                    val toDelete = notes.filter { note ->
+                        legacyMarkers.any { marker ->
+                            note.title.contains(marker, ignoreCase = true) ||
+                                note.rawTranscript.contains(marker, ignoreCase = true)
+                        }
+                    }
+                    toDelete.forEach { repository.deleteNote(it) }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
         }
     }
@@ -305,24 +240,36 @@ L'équipe Projet
         _selectedLanguage.value = lang
         if (prev != lang) {
             val transcript = _rawTranscript.value.trim()
-            val textToRegenerate = if (transcript.isNotBlank()) transcript else _generatedContent.value.trim()
-            if (textToRegenerate.isNotBlank()) {
+            if (transcript.isNotBlank()) {
                 generateDeliverable(
-                    transcript = textToRegenerate,
+                    transcript = transcript,
                     type = _selectedType.value,
                     tone = _selectedTone.value,
                     consumeQuota = false
                 )
+            } else {
+                val audioPath = _currentRecordedAudioPath.value
+                if (!audioPath.isNullOrBlank() && File(audioPath).exists()) {
+                    generateDeliverableFromAudioFile(
+                        audioFile = File(audioPath),
+                        type = _selectedType.value,
+                        tone = _selectedTone.value,
+                        consumeQuota = false
+                    )
+                }
             }
         }
     }
 
     fun startRecording() {
+        speechHelper.stopListening()
         speechHelper.clearTranscript()
-        val langCode = if (_selectedLanguage.value == "en") "en-US" else "fr-FR"
+        _currentActiveNoteId.value = null
+        _rawTranscript.value = ""
+        _generatedContent.value = ""
+        _checklistItems.value = emptyList()
         val audioPath = recorderManager.startRecording()
         _currentRecordedAudioPath.value = audioPath
-        speechHelper.startListening(langCode)
     }
 
     fun pauseRecording() {
@@ -338,16 +285,24 @@ L'équipe Projet
         speechHelper.stopListening()
         _currentRecordedAudioPath.value = audioPath
 
-        var transcript = speechHelper.liveTranscript.value.trim()
-        if (transcript.isBlank()) {
-            transcript = if (_selectedLanguage.value == "en") {
-                "Quick team sync: we agreed on the marketing release next Friday, need to review the analytics dashboard."
-            } else {
-                "Point d'étape rapide : accord sur le déploiement vendredi prochain, nous devons revoir le tableau de bord analytique."
+        if (!audioPath.isNullOrBlank()) {
+            val audioFile = File(audioPath)
+            if (audioFile.exists() && audioFile.length() > 0L) {
+                generateDeliverableFromAudioFile(
+                    audioFile = audioFile,
+                    type = _selectedType.value,
+                    tone = _selectedTone.value,
+                    consumeQuota = true
+                )
+                return
             }
         }
-        _rawTranscript.value = transcript
-        generateDeliverable(transcript, _selectedType.value, _selectedTone.value)
+
+        val liveText = speechHelper.liveTranscript.value.trim()
+        if (liveText.isNotBlank()) {
+            _rawTranscript.value = liveText
+            generateDeliverable(liveText, _selectedType.value, _selectedTone.value)
+        }
     }
 
     fun cancelRecording() {
@@ -360,27 +315,82 @@ L'équipe Projet
     fun setDeliverableType(type: DeliverableType) {
         _selectedType.value = type
         if (_rawTranscript.value.isNotBlank()) {
-            generateDeliverable(_rawTranscript.value, type, _selectedTone.value)
+            generateDeliverable(_rawTranscript.value, type, _selectedTone.value, consumeQuota = false)
+        } else {
+            val audioPath = _currentRecordedAudioPath.value
+            if (!audioPath.isNullOrBlank() && File(audioPath).exists()) {
+                generateDeliverableFromAudioFile(File(audioPath), type, _selectedTone.value, consumeQuota = false)
+            }
         }
     }
 
     fun setTone(tone: ToneType) {
         _selectedTone.value = tone
         if (_rawTranscript.value.isNotBlank()) {
-            generateDeliverable(_rawTranscript.value, _selectedType.value, tone)
+            generateDeliverable(_rawTranscript.value, _selectedType.value, tone, consumeQuota = false)
+        } else {
+            val audioPath = _currentRecordedAudioPath.value
+            if (!audioPath.isNullOrBlank() && File(audioPath).exists()) {
+                generateDeliverableFromAudioFile(File(audioPath), _selectedType.value, tone, consumeQuota = false)
+            }
         }
     }
 
     fun updateRawTranscript(newTranscript: String) {
         _rawTranscript.value = newTranscript
         if (newTranscript.isNotBlank()) {
-            generateDeliverable(newTranscript, _selectedType.value, _selectedTone.value)
+            generateDeliverable(newTranscript, _selectedType.value, _selectedTone.value, consumeQuota = false)
         }
     }
 
     fun regenerate() {
-        if (_rawTranscript.value.isNotBlank()) {
-            generateDeliverable(_rawTranscript.value, _selectedType.value, _selectedTone.value)
+        val audioPath = _currentRecordedAudioPath.value
+        if (_rawTranscript.value.isBlank() && !audioPath.isNullOrBlank() && File(audioPath).exists()) {
+            generateDeliverableFromAudioFile(File(audioPath), _selectedType.value, _selectedTone.value, consumeQuota = false)
+        } else if (_rawTranscript.value.isNotBlank()) {
+            generateDeliverable(_rawTranscript.value, _selectedType.value, _selectedTone.value, consumeQuota = false)
+        }
+    }
+
+    private fun generateDeliverableFromAudioFile(
+        audioFile: File,
+        type: DeliverableType,
+        tone: ToneType,
+        consumeQuota: Boolean = true
+    ) {
+        if (consumeQuota && !billingManager.consumeGeneration()) {
+            _showPaywall.value = true
+            return
+        }
+
+        viewModelScope.launch {
+            _isGenerating.value = true
+            val customInstruction = _selectedCustomTemplate.value?.promptInstruction
+            val audioBytes = try {
+                audioFile.readBytes()
+            } catch (e: Exception) {
+                ByteArray(0)
+            }
+
+            val result = DeliverableGenerator.generateDeliverableFromAudio(
+                audioBytes = audioBytes,
+                mimeType = "audio/mp4",
+                type = type,
+                tone = tone,
+                customInstruction = customInstruction,
+                language = _selectedLanguage.value
+            )
+
+            if (result.rawTranscript.isNotBlank()) {
+                _rawTranscript.value = result.rawTranscript
+            }
+            _generatedContent.value = result.text
+            _checklistItems.value = parseChecklistJson(result.checklistJson)
+            _isGenerating.value = false
+
+            if (result.isAiPowered || result.rawTranscript.isNotBlank()) {
+                saveOrUpdateCurrentNote()
+            }
         }
     }
 

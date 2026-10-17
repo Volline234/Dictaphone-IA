@@ -260,13 +260,9 @@ class AudioTranscriptionViewModel @JvmOverloads constructor(
         lastMimeType = mimeType
         lastCustomInstruction = customInstructions
 
-        val apiKey = try {
-            BuildConfig.GEMINI_API_KEY
-        } catch (e: Exception) {
-            ""
-        }
+        val apiKey = com.example.data.remote.ApiKeyProvider.getGeminiApiKey()
 
-        if (apiKey.isBlank() || apiKey == "MY_GEMINI_API_KEY") {
+        if (apiKey.isBlank()) {
             _uiState.value = AudioTranscriptionUiState.Error(
                 message = appString(R.string.gemini_err_api_key),
                 canRetry = false

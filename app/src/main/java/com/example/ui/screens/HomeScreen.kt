@@ -448,24 +448,6 @@ fun HomeScreen(
                             modifier = Modifier.size(44.dp)
                         )
                     }
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    // Quick Simulation / Demo Buttons for easy exploration
-                    val demoTranscript = stringResource(R.string.home_demo_transcript)
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.Center
-                    ) {
-                        TextButton(
-                            onClick = {
-                                viewModel.updateRawTranscript(demoTranscript)
-                            },
-                            modifier = Modifier.testTag("demo_memo_button")
-                        ) {
-                            Text(stringResource(R.string.home_demo_button), style = MaterialTheme.typography.labelMedium)
-                        }
-                    }
                 }
             }
         }
