@@ -68,7 +68,11 @@ fun CustomTemplateScreen(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Column {
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(end = 8.dp)
+            ) {
                 Text(
                     text = stringResource(R.string.templates_title),
                     style = MaterialTheme.typography.headlineSmall,

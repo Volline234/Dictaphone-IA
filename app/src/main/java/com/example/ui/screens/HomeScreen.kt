@@ -74,6 +74,7 @@ import com.example.model.DeliverableType
 import com.example.ui.components.AudioVisualizerWaveform
 import com.example.ui.components.ChecklistComponent
 import com.example.ui.components.DeliverableCard
+import com.example.ui.components.AppLanguageQuickSwitch
 import com.example.ui.components.FormatChipGroup
 import com.example.ui.components.ThemeQuickToggleButton
 import com.example.ui.theme.RecordingRed
@@ -103,7 +104,6 @@ fun HomeScreen(
     val generatedContent by viewModel.generatedContent.collectAsStateWithLifecycle()
     val checklistItems by viewModel.checklistItems.collectAsStateWithLifecycle()
     val isGenerating by viewModel.isGenerating.collectAsStateWithLifecycle()
-    val selectedLanguage by viewModel.selectedLanguage.collectAsStateWithLifecycle()
     val subscriptionStatus by viewModel.billingManager.subscriptionStatus.collectAsStateWithLifecycle()
     val remainingFree by viewModel.billingManager.remainingFreeGenerations.collectAsStateWithLifecycle()
     val trialDaysLeft by viewModel.billingManager.trialDaysLeft.collectAsStateWithLifecycle()
@@ -201,48 +201,8 @@ fun HomeScreen(
             // Quick Day/Night Toggle + Language Selector FR / EN (F-05)
             Row(verticalAlignment = Alignment.CenterVertically) {
                 ThemeQuickToggleButton(viewModel = viewModel)
-
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier
-                        .background(
-                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
-                            RoundedCornerShape(20.dp)
-                        )
-                        .padding(horizontal = 4.dp, vertical = 2.dp)
-                ) {
-                    Surface(
-                        shape = RoundedCornerShape(16.dp),
-                        color = if (selectedLanguage == "fr") MaterialTheme.colorScheme.primary else Color.Transparent,
-                        modifier = Modifier
-                            .clickable { viewModel.setLanguage("fr") }
-                            .testTag("lang_fr_button")
-                    ) {
-                        Text(
-                            text = "FR",
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = if (selectedLanguage == "fr") MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-
-                    Surface(
-                        shape = RoundedCornerShape(16.dp),
-                        color = if (selectedLanguage == "en") MaterialTheme.colorScheme.primary else Color.Transparent,
-                        modifier = Modifier
-                            .clickable { viewModel.setLanguage("en") }
-                            .testTag("lang_en_button")
-                    ) {
-                        Text(
-                            text = "EN",
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = if (selectedLanguage == "en") MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
+                Spacer(modifier = Modifier.width(4.dp))
+                AppLanguageQuickSwitch(viewModel = viewModel)
             }
         }
 

@@ -2,7 +2,7 @@
 <resources>
     <string name="paywall_close_cd">Fermer</string>
     <string name="paywall_title">Débloquez tout le potentiel de Dictaphone IA</string>
-    <string name="paywall_trial_title">Essai gratuit de 3 jours sans engagement</string>
+    <string name="paywall_trial_title">Essai gratuit de 7 jours sans engagement</string>
     <string name="paywall_trial_subtitle">Aucun prélèvement immédiat. Annulable à tout moment.</string>
     <string name="paywall_feature_1">Transcriptions audio illimitées jusqu\'à 10 minutes</string>
     <string name="paywall_feature_2">Les 3 formats pros : Email, Compte-rendu &amp; Contenu</string>
@@ -18,6 +18,6 @@
     <string name="paywall_weekly_subtext">Facturé toutes les semaines</string>
     <string name="paywall_cta">Activer l\'accès Pro Découverte</string>
     <string name="paywall_restore">Restaurer mes achats</string>
-    <string name="paywall_legal">Paiement sécurisé via Google Play. Essai gratuit de 3 jours, annulable à tout moment depuis les paramètres Google Play.</string>
+    <string name="paywall_legal">Paiement sécurisé via Google Play. Essai gratuit de 7 jours, annulable à tout moment depuis les paramètres Google Play.</string>
     <string name="paywall_manage_sub">Gérer / Annuler mon abonnement Google Play</string>
 </resources>

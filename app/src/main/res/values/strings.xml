@@ -57,7 +57,7 @@
     <string name="theme_toggle_to_light">Switch to light mode</string>
     <string name="settings_language">App language</string>
     <string name="settings_language_desc">Language of menus and buttons. The language of AI deliverables can be chosen separately with the FR / EN switch on the Home screen.</string>
-    <string name="language_system">Device language</string>
+    <string name="language_system">System</string>
     <!-- Language names are always shown in their own language -->
     <string name="language_french" translatable="false">Français</string>
     <string name="language_english" translatable="false">English</string>

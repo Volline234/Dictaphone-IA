@@ -49,7 +49,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.ui.screens.CustomTemplateScreen
 import com.example.ui.screens.FaqHelpScreen
-import com.example.ui.screens.GeminiAudioTranscriptionScreen
 import com.example.ui.screens.HistoryScreen
 import com.example.ui.screens.HomeScreen
 import com.example.ui.screens.OnboardingScreen
@@ -73,7 +72,6 @@ enum class NavigationDestination(
     val unselectedIcon: ImageVector
 ) {
     HOME(R.string.nav_home, Icons.Filled.Mic, Icons.Outlined.Mic),
-    GEMINI_AUDIO(R.string.nav_gemini, Icons.Filled.AutoAwesome, Icons.Outlined.AutoAwesome),
     HISTORY(R.string.nav_history, Icons.Filled.History, Icons.Outlined.History),
     TEMPLATES(R.string.nav_templates, Icons.Filled.Tune, Icons.Outlined.Tune),
     FAQ(R.string.nav_settings, Icons.Filled.Settings, Icons.Outlined.Settings)
@@ -191,12 +189,6 @@ fun DictaphoneApp(viewModel: MainViewModel = viewModel()) {
                             onNavigateToHistory = { currentDestination = NavigationDestination.HISTORY },
                             onNavigateToTemplates = { currentDestination = NavigationDestination.TEMPLATES },
                             onNavigateToPaywall = { viewModel.setShowPaywall(true) }
-                        )
-                    }
-
-                    NavigationDestination.GEMINI_AUDIO -> {
-                        GeminiAudioTranscriptionScreen(
-                            onNavigateToHistory = { currentDestination = NavigationDestination.HISTORY }
                         )
                     }
 

@@ -2,7 +2,7 @@
 <resources>
     <string name="paywall_close_cd">Close</string>
     <string name="paywall_title">Unlock the full potential of Dictaphone AI</string>
-    <string name="paywall_trial_title">3-day free trial, no commitment</string>
+    <string name="paywall_trial_title">7-day free trial, no commitment</string>
     <string name="paywall_trial_subtitle">No immediate charge. Cancel anytime.</string>
     <string name="paywall_feature_1">Unlimited audio transcriptions up to 10 minutes</string>
     <string name="paywall_feature_2">All 3 pro formats: Email, Meeting Notes &amp; Content</string>
@@ -18,6 +18,6 @@
     <string name="paywall_weekly_subtext">Billed weekly</string>
     <string name="paywall_cta">Activate Pro Discovery Access</string>
     <string name="paywall_restore">Restore purchases</string>
-    <string name="paywall_legal">Secure payment via Google Play. 3-day free trial, cancel anytime in Google Play settings.</string>
+    <string name="paywall_legal">Secure payment via Google Play. 7-day free trial, cancel anytime in Google Play settings.</string>
     <string name="paywall_manage_sub">Manage / Cancel my Google Play subscription</string>
 </resources>
