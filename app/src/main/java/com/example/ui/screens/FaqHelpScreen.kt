@@ -27,6 +27,7 @@ import androidx.compose.material.icons.filled.HelpOutline
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.OpenInNew
 import androidx.compose.material.icons.filled.Security
+import androidx.compose.material.icons.filled.WorkspacePremium
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -145,6 +146,50 @@ fun FaqHelpScreen(
                     selected = appLanguage,
                     onSelected = { applyAppLanguage(viewModel, it, context) }
                 )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Section Subscription & Billing
+        Card(
+            shape = RoundedCornerShape(20.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.4f)),
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag("billing_settings_card")
+        ) {
+            Column(modifier = Modifier.padding(14.dp)) {
+                SettingsSectionHeader(
+                    icon = Icons.Default.WorkspacePremium,
+                    title = stringResource(R.string.settings_billing_title),
+                    description = stringResource(R.string.settings_billing_desc)
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                Button(
+                    onClick = { viewModel.setShowPaywall(true) },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(Icons.Default.WorkspacePremium, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = stringResource(R.string.settings_billing_btn_view_plans),
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedButton(
+                    onClick = { viewModel.billingManager.openGooglePlaySubscriptionSettings() },
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(Icons.Default.OpenInNew, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(text = stringResource(R.string.settings_billing_btn_manage))
+                }
             }
         }
 

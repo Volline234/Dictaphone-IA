@@ -46,8 +46,12 @@
     <string name="tone_synthetic">Concise</string>
     <string name="tone_dynamic">Dynamic / Inspiring</string>
 
-    <!-- Settings: appearance & language -->
+    <!-- Settings: subscription, appearance & language -->
     <string name="settings_title">Settings</string>
+    <string name="settings_billing_title">Subscription &amp; Billing</string>
+    <string name="settings_billing_desc">Enjoy unlimited 10-minute recordings, custom templates, and pro formats.</string>
+    <string name="settings_billing_btn_view_plans">View Pro Plans</string>
+    <string name="settings_billing_btn_manage">Manage Google Play Subscription</string>
     <string name="settings_appearance">Appearance</string>
     <string name="settings_appearance_desc">Dark mode reduces eye strain in low light.</string>
     <string name="theme_system">System</string>

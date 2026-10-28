@@ -19,11 +19,15 @@ import com.android.billingclient.api.QueryPurchasesParams
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 enum class SubscriptionStatus {
     FREE_TRIAL,
     PREMIUM_WEEKLY,
     PREMIUM_MONTHLY,
+    PREMIUM_YEARLY,
     FREE_TIER_EXPIRED
 }
 
@@ -32,8 +36,10 @@ class BillingManager(private val context: Context) {
     companion object {
         private const val TAG = "BillingManager"
         // Product IDs — must match exactly what you create in Google Play Console
-        const val PRODUCT_ID_WEEKLY = "premium_weekly"
+        const val PRODUCT_ID_YEARLY = "premium_yearly"
         const val PRODUCT_ID_MONTHLY = "premium_monthly"
+        const val PRODUCT_ID_WEEKLY = "premium_weekly"
+        // Free quota: 5 notes renewed every calendar month for high retention
         const val FREE_GENERATIONS_LIMIT = 5
         const val TRIAL_DURATION_DAYS = 7
     }
@@ -132,11 +138,15 @@ class BillingManager(private val context: Context) {
     private fun queryAvailableProducts() {
         val productList = listOf(
             QueryProductDetailsParams.Product.newBuilder()
-                .setProductId(PRODUCT_ID_WEEKLY)
+                .setProductId(PRODUCT_ID_YEARLY)
                 .setProductType(BillingClient.ProductType.SUBS)
                 .build(),
             QueryProductDetailsParams.Product.newBuilder()
                 .setProductId(PRODUCT_ID_MONTHLY)
+                .setProductType(BillingClient.ProductType.SUBS)
+                .build(),
+            QueryProductDetailsParams.Product.newBuilder()
+                .setProductId(PRODUCT_ID_WEEKLY)
                 .setProductType(BillingClient.ProductType.SUBS)
                 .build()
         )
@@ -165,11 +175,15 @@ class BillingManager(private val context: Context) {
      * Requires an Activity context to display the purchase sheet.
      *
      * @param activity The current Activity (needed by Google Play)
-     * @param plan "weekly" or "monthly"
+     * @param plan "yearly", "monthly", or "weekly"
      * @return true if the billing flow was launched successfully
      */
     fun launchPurchaseFlow(activity: Activity, plan: String): Boolean {
-        val productId = if (plan == "weekly") PRODUCT_ID_WEEKLY else PRODUCT_ID_MONTHLY
+        val productId = when (plan) {
+            "yearly" -> PRODUCT_ID_YEARLY
+            "monthly" -> PRODUCT_ID_MONTHLY
+            else -> PRODUCT_ID_WEEKLY
+        }
         val productDetails = productDetailsList.find { it.productId == productId }
 
         if (billingClient?.isReady != true || productDetails == null) {
@@ -230,8 +244,13 @@ class BillingManager(private val context: Context) {
     }
 
     private fun applyPurchaseLocally(purchase: Purchase) {
-        val isWeekly = purchase.products.contains(PRODUCT_ID_WEEKLY)
-        val plan = if (isWeekly) "weekly" else "monthly"
+        val isYearly = purchase.products.contains(PRODUCT_ID_YEARLY)
+        val isMonthly = purchase.products.contains(PRODUCT_ID_MONTHLY)
+        val plan = when {
+            isYearly -> "yearly"
+            isMonthly -> "monthly"
+            else -> "weekly"
+        }
 
         // Cache subscription state locally for offline access
         prefs.edit()
@@ -240,10 +259,10 @@ class BillingManager(private val context: Context) {
             .putString("purchase_token", purchase.purchaseToken)
             .apply()
 
-        _subscriptionStatus.value = if (isWeekly) {
-            SubscriptionStatus.PREMIUM_WEEKLY
-        } else {
-            SubscriptionStatus.PREMIUM_MONTHLY
+        _subscriptionStatus.value = when {
+            isYearly -> SubscriptionStatus.PREMIUM_YEARLY
+            isMonthly -> SubscriptionStatus.PREMIUM_MONTHLY
+            else -> SubscriptionStatus.PREMIUM_WEEKLY
         }
     }
 
@@ -298,6 +317,16 @@ class BillingManager(private val context: Context) {
             firstLaunchTime
         }
 
+        // Monthly quota reset check (giving free users renewed quota every calendar month)
+        val currentMonthKey = SimpleDateFormat("yyyy-MM", Locale.US).format(Date(now))
+        val lastResetMonth = prefs.getString("last_quota_reset_month", "")
+        if (lastResetMonth != currentMonthKey) {
+            prefs.edit()
+                .putString("last_quota_reset_month", currentMonthKey)
+                .putInt("free_generations_used", 0)
+                .apply()
+        }
+
         val isSubscribed = prefs.getBoolean("is_subscribed", false)
         val planName = prefs.getString("subscribed_plan", null)
 
@@ -309,8 +338,9 @@ class BillingManager(private val context: Context) {
         _remainingFreeGenerations.value = (FREE_GENERATIONS_LIMIT - usedGenerations).coerceAtLeast(0)
 
         _subscriptionStatus.value = when {
-            isSubscribed && planName == "weekly" -> SubscriptionStatus.PREMIUM_WEEKLY
+            isSubscribed && planName == "yearly" -> SubscriptionStatus.PREMIUM_YEARLY
             isSubscribed && planName == "monthly" -> SubscriptionStatus.PREMIUM_MONTHLY
+            isSubscribed && planName == "weekly" -> SubscriptionStatus.PREMIUM_WEEKLY
             daysLeft > 0 -> SubscriptionStatus.FREE_TRIAL
             else -> SubscriptionStatus.FREE_TIER_EXPIRED
         }
@@ -323,14 +353,15 @@ class BillingManager(private val context: Context) {
 
     fun consumeGeneration(): Boolean {
         // Premium or trial users have unlimited generations
-        if (_subscriptionStatus.value == SubscriptionStatus.PREMIUM_WEEKLY ||
+        if (_subscriptionStatus.value == SubscriptionStatus.PREMIUM_YEARLY ||
             _subscriptionStatus.value == SubscriptionStatus.PREMIUM_MONTHLY ||
+            _subscriptionStatus.value == SubscriptionStatus.PREMIUM_WEEKLY ||
             _subscriptionStatus.value == SubscriptionStatus.FREE_TRIAL
         ) {
             return true
         }
 
-        // Free tier: consume from the limited quota
+        // Free tier: consume from the monthly quota
         if (_remainingFreeGenerations.value > 0) {
             val used = prefs.getInt("free_generations_used", 0) + 1
             prefs.edit().putInt("free_generations_used", used).apply()
@@ -351,10 +382,10 @@ class BillingManager(private val context: Context) {
             .putBoolean("is_subscribed", true)
             .putString("subscribed_plan", plan)
             .apply()
-        _subscriptionStatus.value = if (plan == "weekly") {
-            SubscriptionStatus.PREMIUM_WEEKLY
-        } else {
-            SubscriptionStatus.PREMIUM_MONTHLY
+        _subscriptionStatus.value = when (plan) {
+            "yearly" -> SubscriptionStatus.PREMIUM_YEARLY
+            "monthly" -> SubscriptionStatus.PREMIUM_MONTHLY
+            else -> SubscriptionStatus.PREMIUM_WEEKLY
         }
     }
 

@@ -47,22 +47,16 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.R
-import com.example.billing.SubscriptionStatus
-import com.example.ui.theme.PrimaryIndigo
-import com.example.ui.theme.SecondaryTeal
-import com.example.ui.theme.TertiaryAmber
 import com.example.ui.viewmodel.MainViewModel
 
 @Composable
@@ -71,11 +65,7 @@ fun PaywallScreen(
     onClose: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val subscriptionStatus by viewModel.billingManager.subscriptionStatus.collectAsStateWithLifecycle()
-    val trialDaysLeft by viewModel.billingManager.trialDaysLeft.collectAsStateWithLifecycle()
-    val remainingFree by viewModel.billingManager.remainingFreeGenerations.collectAsStateWithLifecycle()
-
-    var selectedPlan by remember { mutableStateOf("monthly") } // "weekly" or "monthly"
+    var selectedPlan by remember { mutableStateOf("yearly") } // "yearly" (recommended) or "monthly"
     val scrollState = rememberScrollState()
     val context = LocalContext.current
     val activity = remember(context) { context.findActivity() }
@@ -85,7 +75,7 @@ fun PaywallScreen(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
             .verticalScroll(scrollState)
-            .padding(20.dp),
+            .padding(horizontal = 20.dp, vertical = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         // Top Bar with Close
@@ -109,34 +99,43 @@ fun PaywallScreen(
         Surface(
             shape = CircleShape,
             color = MaterialTheme.colorScheme.primaryContainer,
-            modifier = Modifier.size(64.dp)
+            modifier = Modifier.size(60.dp)
         ) {
             Box(contentAlignment = Alignment.Center) {
                 Icon(
                     Icons.Default.WorkspacePremium,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(36.dp)
+                    modifier = Modifier.size(34.dp)
                 )
             }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
         Text(
             text = stringResource(R.string.paywall_title),
-            style = MaterialTheme.typography.headlineSmall,
+            style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold,
             textAlign = TextAlign.Center,
             color = MaterialTheme.colorScheme.onSurface
         )
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(6.dp))
+
+        Text(
+            text = stringResource(R.string.paywall_subtitle),
+            style = MaterialTheme.typography.bodyMedium,
+            textAlign = TextAlign.Center,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+
+        Spacer(modifier = Modifier.height(14.dp))
 
         // Free Trial Banner (F-30)
         Surface(
             shape = RoundedCornerShape(12.dp),
-            color = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.7f),
+            color = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.75f),
             modifier = Modifier.fillMaxWidth()
         ) {
             Row(
@@ -147,9 +146,9 @@ fun PaywallScreen(
                     Icons.Default.Star,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.tertiary,
-                    modifier = Modifier.size(20.dp)
+                    modifier = Modifier.size(22.dp)
                 )
-                Spacer(modifier = Modifier.width(8.dp))
+                Spacer(modifier = Modifier.width(10.dp))
                 Column {
                     Text(
                         text = stringResource(R.string.paywall_trial_title),
@@ -160,7 +159,7 @@ fun PaywallScreen(
                     Text(
                         text = stringResource(R.string.paywall_trial_subtitle),
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.8f)
+                        color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.85f)
                     )
                 }
             }
@@ -183,7 +182,20 @@ fun PaywallScreen(
         Spacer(modifier = Modifier.height(20.dp))
 
         // Pricing Cards (F-31)
-        // Option 1: Monthly (9,99 €/mois - Recommended)
+        // Option 1: Yearly (39,99 €/an — Best Value & Hero Offer)
+        PlanCard(
+            title = stringResource(R.string.paywall_yearly_title),
+            price = stringResource(R.string.paywall_yearly_price),
+            badge = stringResource(R.string.paywall_yearly_badge),
+            subtext = stringResource(R.string.paywall_yearly_subtext),
+            isSelected = selectedPlan == "yearly",
+            onClick = { selectedPlan = "yearly" },
+            testTag = "plan_yearly_card"
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // Option 2: Monthly (7,99 €/mois — Flexible Offer)
         PlanCard(
             title = stringResource(R.string.paywall_monthly_title),
             price = stringResource(R.string.paywall_monthly_price),
@@ -192,19 +204,6 @@ fun PaywallScreen(
             isSelected = selectedPlan == "monthly",
             onClick = { selectedPlan = "monthly" },
             testTag = "plan_monthly_card"
-        )
-
-        Spacer(modifier = Modifier.height(10.dp))
-
-        // Option 2: Weekly (4,99 €/semaine)
-        PlanCard(
-            title = stringResource(R.string.paywall_weekly_title),
-            price = stringResource(R.string.paywall_weekly_price),
-            badge = null,
-            subtext = stringResource(R.string.paywall_weekly_subtext),
-            isSelected = selectedPlan == "weekly",
-            onClick = { selectedPlan = "weekly" },
-            testTag = "plan_weekly_card"
         )
 
         Spacer(modifier = Modifier.height(20.dp))
@@ -229,13 +228,31 @@ fun PaywallScreen(
                 .testTag("subscribe_cta_button")
         ) {
             Text(
-                text = stringResource(R.string.paywall_cta),
+                text = if (selectedPlan == "yearly") {
+                    stringResource(R.string.paywall_cta_trial)
+                } else {
+                    stringResource(R.string.paywall_cta_monthly)
+                },
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
             )
         }
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(6.dp))
+
+        // Microcopy below CTA button (reduces fear and reassures user)
+        Text(
+            text = if (selectedPlan == "yearly") {
+                stringResource(R.string.paywall_cta_subtext_yearly)
+            } else {
+                stringResource(R.string.paywall_cta_subtext_monthly)
+            },
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
 
         // Restore Purchases Button (required by Google Play guidelines)
         TextButton(
@@ -249,12 +266,12 @@ fun PaywallScreen(
             )
         }
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(4.dp))
 
         Text(
             text = stringResource(R.string.paywall_legal),
             style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
             textAlign = TextAlign.Center
         )
 
@@ -273,6 +290,8 @@ fun PaywallScreen(
             Spacer(modifier = Modifier.width(6.dp))
             Text(stringResource(R.string.paywall_manage_sub))
         }
+        
+        Spacer(modifier = Modifier.height(12.dp))
     }
 }
 
@@ -310,14 +329,14 @@ fun PlanCard(
     Card(
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
-            containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f) else MaterialTheme.colorScheme.surface
+            containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f) else MaterialTheme.colorScheme.surface
         ),
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(20.dp))
             .border(
                 width = if (isSelected) 2.dp else 1.dp,
-                color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline.copy(alpha = 0.4f),
+                color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline.copy(alpha = 0.35f),
                 shape = RoundedCornerShape(20.dp)
             )
             .clickable { onClick() }
@@ -335,7 +354,7 @@ fun PlanCard(
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onTertiary,
-                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp)
                     )
                 }
             }

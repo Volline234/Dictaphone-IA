@@ -39,8 +39,12 @@
     <string name="tone_synthetic">Synthétique</string>
     <string name="tone_dynamic">Dynamique / Inspirant</string>
 
-    <!-- Réglages : apparence & langue -->
+    <!-- Réglages : abonnement, apparence & langue -->
     <string name="settings_title">Réglages</string>
+    <string name="settings_billing_title">Abonnement &amp; Facturation</string>
+    <string name="settings_billing_desc">Profitez de transcriptions 10 min illimitées, gabarits et formats pros.</string>
+    <string name="settings_billing_btn_view_plans">Voir les formules Pro</string>
+    <string name="settings_billing_btn_manage">Gérer mon abonnement Google Play</string>
     <string name="settings_appearance">Apparence</string>
     <string name="settings_appearance_desc">Le mode sombre réduit la fatigue visuelle en faible luminosité.</string>
     <string name="theme_system">Système</string>

@@ -2,22 +2,41 @@
 <resources>
     <string name="paywall_close_cd">Fermer</string>
     <string name="paywall_title">Débloquez tout le potentiel de Dictaphone IA</string>
-    <string name="paywall_trial_title">Essai gratuit de 7 jours sans engagement</string>
-    <string name="paywall_trial_subtitle">Aucun prélèvement immédiat. Annulable à tout moment.</string>
+    <string name="paywall_subtitle">Gagnez plus de 2 heures par semaine sur vos comptes-rendus et e-mails.</string>
+    <string name="paywall_trial_title">7 jours d\'essai gratuit • 0 € aujourd\'hui</string>
+    <string name="paywall_trial_subtitle">Aucun prélèvement immédiat. Annulable à tout moment en 1 clic.</string>
     <string name="paywall_feature_1">Transcriptions audio illimitées jusqu\'à 10 minutes</string>
     <string name="paywall_feature_2">Les 3 formats pros : Email, Compte-rendu &amp; Contenu</string>
     <string name="paywall_feature_3">Régénération instantanée multiton (Formel, Décontracté)</string>
     <string name="paywall_feature_4">Gabarits et prompts personnalisés illimités</string>
     <string name="paywall_feature_5">Historique complet &amp; Partage natif Android sans limite</string>
+    
+    <!-- Yearly Plan (Hero offer) -->
+    <string name="paywall_yearly_title">Abonnement Annuel</string>
+    <string name="paywall_yearly_price">39,99 € / an</string>
+    <string name="paywall_yearly_badge">MEILLEURE OFFRE • ÉCONOMIE 60%</string>
+    <string name="paywall_yearly_subtext">Soit seulement 3,33 €/mois • 7 jours d\'essai offerts</string>
+
+    <!-- Monthly Plan (Flexible offer) -->
     <string name="paywall_monthly_title">Abonnement Mensuel</string>
-    <string name="paywall_monthly_price">9,99 € / mois</string>
-    <string name="paywall_monthly_badge">RECOMMANDÉ • ÉCONOMIE 50%</string>
-    <string name="paywall_monthly_subtext">Soit environ 2,30 € par semaine</string>
+    <string name="paywall_monthly_price">7,99 € / mois</string>
+    <string name="paywall_monthly_badge">FLEXIBLE</string>
+    <string name="paywall_monthly_subtext">Facturé chaque mois • Sans engagement</string>
+
+    <!-- Legacy / Weekly Plan (kept for compatibility) -->
     <string name="paywall_weekly_title">Abonnement Hebdomadaire</string>
-    <string name="paywall_weekly_price">4,99 € / semaine</string>
+    <string name="paywall_weekly_price">2,99 € / semaine</string>
+    <string name="paywall_weekly_badge">HEBDOMADAIRE</string>
     <string name="paywall_weekly_subtext">Facturé toutes les semaines</string>
-    <string name="paywall_cta">Activer l\'accès Pro Découverte</string>
+
+    <!-- CTAs -->
+    <string name="paywall_cta">Démarrer mes 7 jours gratuits</string>
+    <string name="paywall_cta_trial">Démarrer mes 7 jours gratuits</string>
+    <string name="paywall_cta_monthly">S\'abonner pour 7,99 € / mois</string>
+    <string name="paywall_cta_weekly">S\'abonner pour 2,99 € / semaine</string>
+    <string name="paywall_cta_subtext_yearly">Puis 39,99 €/an (soit 3,33 €/mois) • Annulable à tout moment</string>
+    <string name="paywall_cta_subtext_monthly">Sans engagement • Annulable en 1 clic sur Google Play</string>
     <string name="paywall_restore">Restaurer mes achats</string>
-    <string name="paywall_legal">Paiement sécurisé via Google Play. Essai gratuit de 7 jours, annulable à tout moment depuis les paramètres Google Play.</string>
+    <string name="paywall_legal">Paiement sécurisé via Google Play. Essai gratuit de 7 jours sur la formule annuelle. Annulable facilement à tout moment depuis vos abonnements Google Play.</string>
     <string name="paywall_manage_sub">Gérer / Annuler mon abonnement Google Play</string>
 </resources>

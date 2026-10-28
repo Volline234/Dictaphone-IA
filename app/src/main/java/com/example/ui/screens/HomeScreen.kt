@@ -158,7 +158,7 @@ fun HomeScreen(
                 shape = RoundedCornerShape(12.dp),
                 color = when (subscriptionStatus) {
                     SubscriptionStatus.FREE_TRIAL -> MaterialTheme.colorScheme.tertiaryContainer
-                    SubscriptionStatus.PREMIUM_WEEKLY, SubscriptionStatus.PREMIUM_MONTHLY -> MaterialTheme.colorScheme.primaryContainer
+                    SubscriptionStatus.PREMIUM_WEEKLY, SubscriptionStatus.PREMIUM_MONTHLY, SubscriptionStatus.PREMIUM_YEARLY -> MaterialTheme.colorScheme.primaryContainer
                     SubscriptionStatus.FREE_TIER_EXPIRED -> MaterialTheme.colorScheme.surfaceVariant
                 },
                 modifier = Modifier
@@ -176,7 +176,7 @@ fun HomeScreen(
                         modifier = Modifier.size(16.dp),
                         tint = when (subscriptionStatus) {
                             SubscriptionStatus.FREE_TRIAL -> MaterialTheme.colorScheme.tertiary
-                            SubscriptionStatus.PREMIUM_WEEKLY, SubscriptionStatus.PREMIUM_MONTHLY -> MaterialTheme.colorScheme.primary
+                            SubscriptionStatus.PREMIUM_WEEKLY, SubscriptionStatus.PREMIUM_MONTHLY, SubscriptionStatus.PREMIUM_YEARLY -> MaterialTheme.colorScheme.primary
                             SubscriptionStatus.FREE_TIER_EXPIRED -> MaterialTheme.colorScheme.onSurfaceVariant
                         }
                     )
@@ -184,14 +184,14 @@ fun HomeScreen(
                     Text(
                         text = when (subscriptionStatus) {
                             SubscriptionStatus.FREE_TRIAL -> stringResource(R.string.home_badge_trial, trialDaysLeft)
-                            SubscriptionStatus.PREMIUM_WEEKLY, SubscriptionStatus.PREMIUM_MONTHLY -> stringResource(R.string.home_badge_premium)
+                            SubscriptionStatus.PREMIUM_WEEKLY, SubscriptionStatus.PREMIUM_MONTHLY, SubscriptionStatus.PREMIUM_YEARLY -> stringResource(R.string.home_badge_premium)
                             SubscriptionStatus.FREE_TIER_EXPIRED -> stringResource(R.string.home_badge_free_remaining, remainingFree)
                         },
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.SemiBold,
                         color = when (subscriptionStatus) {
                             SubscriptionStatus.FREE_TRIAL -> MaterialTheme.colorScheme.onTertiaryContainer
-                            SubscriptionStatus.PREMIUM_WEEKLY, SubscriptionStatus.PREMIUM_MONTHLY -> MaterialTheme.colorScheme.onPrimaryContainer
+                            SubscriptionStatus.PREMIUM_WEEKLY, SubscriptionStatus.PREMIUM_MONTHLY, SubscriptionStatus.PREMIUM_YEARLY -> MaterialTheme.colorScheme.onPrimaryContainer
                             SubscriptionStatus.FREE_TIER_EXPIRED -> MaterialTheme.colorScheme.onSurfaceVariant
                         }
                     )
