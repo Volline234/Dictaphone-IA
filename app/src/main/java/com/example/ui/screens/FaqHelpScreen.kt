@@ -324,7 +324,7 @@ fun FaqHelpScreen(
 
         // App Version
         Text(
-            text = "Dictaphone IA • Version 1.1 (2)",
+            text = "Dictaphone IA • Version 1.2 (3)",
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
             modifier = Modifier.align(Alignment.CenterHorizontally)
